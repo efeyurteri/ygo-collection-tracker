@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yu-Gi-Oh! Collection Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Using PapaParse via CDN to easily read/write CSV files in the browser -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Yu-Gi-Oh! Collection Tracker</h1>
+        <div class="actions">
+            <button id="exportBtn" class="btn primary">Export to CSV</button>
+            <button id="clearLocalBtn" class="btn danger">Clear Local Additions</button>
+        </div>
+    </header>
+    
+    <main>
+        <!-- The form to add new cards -->
+        <section class="add-card-section">
+            <h2>Add New Card</h2>
+            <form id="addCardForm">
+                <input type="text" id="productInput" placeholder="Product (e.g., Core Booster)" required>
+                <input type="text" id="themeInput" placeholder="Theme/Deck (e.g., Fiendsmith)" required>
+                <input type="text" id="cardNameInput" placeholder="Exact Card Name" required>
+                <input type="number" id="quantityInput" placeholder="Qty" min="1" required>
+                <button type="submit" class="btn">Add to Tracker</button>
+            </form>
+        </section>
+
+        <!-- Search bar to filter cards -->
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="Search your collection...">
+        </div>
+
+        <!-- The grid where the JavaScript will inject the images and data -->
+        <section id="cardGrid" class="card-grid">
+            <!-- Cards injected here via app.js -->
+        </section>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
