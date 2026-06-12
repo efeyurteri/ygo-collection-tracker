@@ -36,6 +36,33 @@
             <div style="grid-column: 1 / -1; text-align: center; color: #aaa;">Loading Card Database...</div>
         </section>
     </main>
+
+    <div id="cardModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <div class="modal-body">
+                <div class="modal-image-container">
+                    <img id="modalImage" src="" alt="Card Image">
+                </div>
+                <div class="modal-details">
+                    <h2 id="modalName">Card Name</h2>
+                    <div class="modal-meta-line">
+                        <span id="modalAttribute" class="badge"></span>
+                        <span id="modalLevel" class="badge"></span>
+                    </div>
+                    <p><strong>[ <span id="modalRace"></span> / <span id="modalType"></span> ]</strong></p>
+                    <div class="modal-desc" id="modalDesc">Card description goes here.</div>
+                    <div class="modal-stats">
+                        <span><strong>ATK/</strong> <span id="modalAtk"></span></span>
+                        <span id="defContainer"><strong>DEF/</strong> <span id="modalDef"></span></span>
+                    </div>
+                    <hr>
+                    <p style="color: #aaa; font-size: 0.9em;">From: <span id="modalProduct"></span> • Code: <span id="modalCode"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
