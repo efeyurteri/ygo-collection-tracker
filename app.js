@@ -15,18 +15,7 @@ const addStatus = document.getElementById('addStatus');
 const modal = document.getElementById("cardModal");
 const closeBtn = document.querySelector(".close-btn");
 
-async function fetchDatabase() {
-    try {
-        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
-        const data = await response.json();
-        ygoDatabase = data.data;
-        initCSV(); 
-    } catch (err) {
-        grid.innerHTML = '<div style="color: red;">Failed to load Yu-Gi-Oh! database. Check internet connection.</div>';
-    }
-}
-
-async function initCSV() {
+async function init() {
     try {
         const response = await fetch(CSV_FILE);
         if (response.ok) {
@@ -36,14 +25,28 @@ async function initCSV() {
                 skipEmptyLines: true,
                 complete: function(results) {
                     baseCollection = results.data;
-                    renderCards();
+                    renderCards(); 
+                    fetchDatabase(); 
                 }
             });
         } else {
             renderCards();
+            fetchDatabase();
         }
     } catch (err) {
         renderCards();
+        fetchDatabase();
+    }
+}
+
+async function fetchDatabase() {
+    try {
+        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
+        const data = await response.json();
+        ygoDatabase = data.data;
+        renderCards(searchInput.value); 
+    } catch (err) {
+        console.warn("Background database fetch failed.");
     }
 }
 
@@ -57,47 +60,57 @@ function getCardDataFromName(cardName) {
     return ygoDatabase.find(c => c.name.toLowerCase() === lowerName);
 }
 
-// Open the Modal and populate data
 function openModal(cardEntry, apiData) {
-    document.getElementById("modalImage").src = `https://images.ygoprodeck.com/images/cards/${apiData.id}.jpg`;
-    document.getElementById("modalName").textContent = apiData.name;
-    document.getElementById("modalDesc").textContent = apiData.desc;
-    
-    document.getElementById("modalRace").textContent = apiData.race || "N/A";
-    document.getElementById("modalType").textContent = apiData.type || "N/A";
-    
-    // Hide attribute/level if it's a spell/trap
-    const attrEl = document.getElementById("modalAttribute");
-    const levelEl = document.getElementById("modalLevel");
-    if(apiData.attribute) {
-        attrEl.textContent = apiData.attribute;
-        attrEl.style.display = "inline-block";
-    } else {
-        attrEl.style.display = "none";
-    }
-    
-    if(apiData.level || apiData.level === 0) {
-        levelEl.textContent = `Level/Rank/Link: ${apiData.level || apiData.linkval}`;
-        levelEl.style.display = "inline-block";
-    } else {
-        levelEl.style.display = "none";
-    }
-
-    // Hide ATK/DEF if not a monster
-    const statsDiv = document.querySelector(".modal-stats");
-    if(apiData.atk !== undefined) {
-        statsDiv.style.display = "flex";
-        document.getElementById("modalAtk").textContent = apiData.atk;
-        const defContainer = document.getElementById("defContainer");
-        if(apiData.def !== undefined) {
-            defContainer.style.display = "inline";
-            document.getElementById("modalDef").textContent = apiData.def;
+    if (apiData) {
+        document.getElementById("modalImage").src = `https://images.ygoprodeck.com/images/cards/${apiData.id}.jpg`;
+        document.getElementById("modalName").textContent = apiData.name;
+        document.getElementById("modalDesc").textContent = apiData.desc;
+        document.getElementById("modalRace").textContent = apiData.race || "N/A";
+        document.getElementById("modalType").textContent = apiData.type || "N/A";
+        
+        const attrEl = document.getElementById("modalAttribute");
+        const levelEl = document.getElementById("modalLevel");
+        
+        if (apiData.attribute) {
+            attrEl.textContent = apiData.attribute;
+            attrEl.style.display = "inline-block";
         } else {
-             // Link monsters have no DEF
-            defContainer.style.display = "none";
+            attrEl.style.display = "none";
+        }
+        
+        if (apiData.level || apiData.level === 0) {
+            levelEl.textContent = `Level/Rank: ${apiData.level}`;
+            levelEl.style.display = "inline-block";
+        } else if (apiData.linkval) {
+            levelEl.textContent = `Link-${apiData.linkval}`;
+            levelEl.style.display = "inline-block";
+        } else {
+            levelEl.style.display = "none";
+        }
+
+        const statsDiv = document.querySelector(".modal-stats");
+        if (apiData.atk !== undefined) {
+            statsDiv.style.display = "flex";
+            document.getElementById("modalAtk").textContent = apiData.atk;
+            const defContainer = document.getElementById("defContainer");
+            if (apiData.def !== undefined) {
+                defContainer.style.display = "inline";
+                document.getElementById("modalDef").textContent = apiData.def;
+            } else {
+                defContainer.style.display = "none";
+            }
+        } else {
+            statsDiv.style.display = "none";
         }
     } else {
-        statsDiv.style.display = "none";
+        document.getElementById("modalImage").src = `https://images.ygoprodeck.com/images/cards/back_high.jpg`;
+        document.getElementById("modalName").textContent = cardEntry['Card Name'];
+        document.getElementById("modalDesc").textContent = "Custom card or detailed database entry loading...";
+        document.getElementById("modalRace").textContent = "N/A";
+        document.getElementById("modalType").textContent = "Card";
+        document.getElementById("modalAttribute").style.display = "none";
+        document.getElementById("modalLevel").style.display = "none";
+        document.querySelector(".modal-stats").style.display = "none";
     }
 
     document.getElementById("modalProduct").textContent = cardEntry['Product'] || 'Custom Add';
@@ -106,14 +119,37 @@ function openModal(cardEntry, apiData) {
     modal.style.display = "block";
 }
 
-// Close Modal
-closeBtn.onclick = function() {
-    modal.style.display = "none";
-}
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.style.display = "none";
+closeBtn.onclick = function() { modal.style.display = "none"; }
+window.onclick = function(event) { if (event.target == modal) { modal.style.display = "none"; } }
+
+// NEW FUNCTION: Handle + and - clicks
+function changeQuantity(cardEntry, delta, event) {
+    event.stopPropagation(); // Stops the modal from opening when you click the buttons
+    
+    let newQty = parseInt(cardEntry['Quantity']) + delta;
+
+    if (newQty <= 0) {
+        if (confirm(`Remove ${cardEntry['Card Name']} entirely from your tracking list?`)) {
+            // Find and remove the card from whichever array it lives in
+            const localIdx = localAdditions.indexOf(cardEntry);
+            if (localIdx > -1) {
+                localAdditions.splice(localIdx, 1);
+                localStorage.setItem('ygo_local_additions', JSON.stringify(localAdditions));
+            } else {
+                const baseIdx = baseCollection.indexOf(cardEntry);
+                if (baseIdx > -1) baseCollection.splice(baseIdx, 1);
+            }
+        } else {
+            return; // Canceled deletion
+        }
+    } else {
+        cardEntry['Quantity'] = newQty;
+        // If it was a manually added local card, update local storage so it persists
+        if (localAdditions.includes(cardEntry)) {
+            localStorage.setItem('ygo_local_additions', JSON.stringify(localAdditions));
+        }
     }
+    renderCards(searchInput.value);
 }
 
 function renderCards(filterText = '') {
@@ -121,21 +157,26 @@ function renderCards(filterText = '') {
     const collection = getCollection();
     
     const filtered = collection.filter(card => {
-        const nameMatch = card['Card Name'] && card['Card Name'].toLowerCase().includes(filterText.toLowerCase());
-        const codeMatch = card['Set Code'] && String(card['Set Code']).toLowerCase().includes(filterText.toLowerCase());
-        return nameMatch || codeMatch;
+        const name = card['Card Name'] ? String(card['Card Name']).toLowerCase() : '';
+        const code = card['Set Code'] ? String(card['Set Code']).toLowerCase() : '';
+        const search = filterText.toLowerCase();
+        return name.includes(search) || code.includes(search);
     });
+
+    if (filtered.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #aaa; padding: 20px;">No cards match your search.</div>';
+        return;
+    }
 
     filtered.forEach(card => {
         const name = card['Card Name'];
         const qty = card['Quantity'];
         
         let apiData = getCardDataFromName(name);
-        let cardId = apiData ? apiData.id : null;
-
-        const imgUrl = cardId 
-            ? `https://images.ygoprodeck.com/images/cards/${cardId}.jpg`
-            : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
+        
+        const imgUrl = apiData 
+            ? `https://images.ygoprodeck.com/images/cards/${apiData.id}.jpg`
+            : `https://images.ygoprodeck.com/images/cards/${encodeURIComponent(name)}.jpg`;
 
         const cardEl = document.createElement('div');
         cardEl.className = 'card';
@@ -144,14 +185,20 @@ function renderCards(filterText = '') {
             <img src="${imgUrl}" alt="${name}" onerror="this.src='https://images.ygoprodeck.com/images/cards/back_high.jpg'" loading="lazy">
             <div class="card-info">
                 <h3 class="card-title" title="${name}">${name}</h3>
-                <div class="card-meta">${card['Product'] || 'Custom Add'} • ${card['Set Code'] || 'No Code'}</div>
+                <div class="card-meta">${card['Product'] || 'Collection'} • ${card['Set Code'] || 'No Code'}</div>
+            </div>
+            <div class="qty-controls">
+                <button class="qty-btn minus-btn">-</button>
+                <button class="qty-btn plus-btn">+</button>
             </div>
         `;
         
-        // Add click listener to open modal
-        if(apiData) {
-            cardEl.addEventListener('click', () => openModal(card, apiData));
-        }
+        // Open Modal Listener
+        cardEl.addEventListener('click', () => openModal(card, apiData));
+        
+        // Plus/Minus Listeners
+        cardEl.querySelector('.minus-btn').addEventListener('click', (e) => changeQuantity(card, -1, e));
+        cardEl.querySelector('.plus-btn').addEventListener('click', (e) => changeQuantity(card, 1, e));
 
         grid.appendChild(cardEl);
     });
@@ -160,7 +207,6 @@ function renderCards(filterText = '') {
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     addStatus.textContent = '';
-    
     const input = document.getElementById('codeInput').value.trim();
     
     let foundCard = null;
@@ -181,16 +227,11 @@ form.addEventListener('submit', (e) => {
         foundCard = ygoDatabase.find(c => c.name.toLowerCase() === input.toLowerCase());
     }
     
-    if (!foundCard) {
-        addStatus.textContent = 'Could not find that Set Code or Card Name in the database.';
-        return;
-    }
-    
     const newCard = {
-        'Product': foundSet ? foundSet.set_name : 'Unknown Product',
-        'Theme/Deck': foundCard.archetype || 'None',
-        'Card Name': foundCard.name, 
-        'Set Code': foundSet ? foundSet.set_code : input,
+        'Product': foundSet ? foundSet.set_name : 'Custom Add',
+        'Theme/Deck': foundCard ? (foundCard.archetype || 'None') : 'Custom',
+        'Card Name': foundCard ? foundCard.name : input, 
+        'Set Code': foundSet ? foundSet.set_code : (input.includes('-') ? input.toUpperCase() : 'N/A'),
         'Quantity': document.getElementById('quantityInput').value
     };
     
@@ -226,4 +267,4 @@ clearLocalBtn.addEventListener('click', () => {
     }
 });
 
-fetchDatabase();
+init();
