@@ -279,3 +279,33 @@ hr {
         max-width: 280px;
     }
 }
+
+/* Quantity Controls on Card Hover */
+.qty-controls {
+    display: flex;
+    justify-content: space-between;
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+}
+
+.qty-btn {
+    flex: 1;
+    background: transparent;
+    color: var(--primary);
+    border: none;
+    padding: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.qty-btn:hover {
+    background: #333;
+    color: white;
+}
+
+.qty-btn.minus-btn {
+    border-right: 1px solid #333;
+    color: var(--danger);
+}
