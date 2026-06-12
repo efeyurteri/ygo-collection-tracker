@@ -2,7 +2,7 @@ const CSV_FILE = 'YuGiOh_Collection_Tracker.csv';
 
 let baseCollection = [];
 let localAdditions = JSON.parse(localStorage.getItem('ygo_local_additions')) || [];
-let ygoDatabase = []; // Will hold the official API data
+let ygoDatabase = []; 
 
 const grid = document.getElementById('cardGrid');
 const form = document.getElementById('addCardForm');
@@ -11,7 +11,10 @@ const exportBtn = document.getElementById('exportBtn');
 const clearLocalBtn = document.getElementById('clearLocalBtn');
 const addStatus = document.getElementById('addStatus');
 
-// 1. Fetch the Official YGOPRODECK Database
+// Modal Elements
+const modal = document.getElementById("cardModal");
+const closeBtn = document.querySelector(".close-btn");
+
 async function fetchDatabase() {
     try {
         const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
@@ -23,7 +26,6 @@ async function fetchDatabase() {
     }
 }
 
-// 2. Fetch the CSV
 async function initCSV() {
     try {
         const response = await fetch(CSV_FILE);
@@ -49,14 +51,71 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
-function getCardIdFromName(cardName) {
+function getCardDataFromName(cardName) {
     if (!cardName) return null;
     const lowerName = cardName.toLowerCase();
-    const found = ygoDatabase.find(c => c.name.toLowerCase() === lowerName);
-    return found ? found.id : null;
+    return ygoDatabase.find(c => c.name.toLowerCase() === lowerName);
 }
 
-// 3. Render the grid
+// Open the Modal and populate data
+function openModal(cardEntry, apiData) {
+    document.getElementById("modalImage").src = `https://images.ygoprodeck.com/images/cards/${apiData.id}.jpg`;
+    document.getElementById("modalName").textContent = apiData.name;
+    document.getElementById("modalDesc").textContent = apiData.desc;
+    
+    document.getElementById("modalRace").textContent = apiData.race || "N/A";
+    document.getElementById("modalType").textContent = apiData.type || "N/A";
+    
+    // Hide attribute/level if it's a spell/trap
+    const attrEl = document.getElementById("modalAttribute");
+    const levelEl = document.getElementById("modalLevel");
+    if(apiData.attribute) {
+        attrEl.textContent = apiData.attribute;
+        attrEl.style.display = "inline-block";
+    } else {
+        attrEl.style.display = "none";
+    }
+    
+    if(apiData.level || apiData.level === 0) {
+        levelEl.textContent = `Level/Rank/Link: ${apiData.level || apiData.linkval}`;
+        levelEl.style.display = "inline-block";
+    } else {
+        levelEl.style.display = "none";
+    }
+
+    // Hide ATK/DEF if not a monster
+    const statsDiv = document.querySelector(".modal-stats");
+    if(apiData.atk !== undefined) {
+        statsDiv.style.display = "flex";
+        document.getElementById("modalAtk").textContent = apiData.atk;
+        const defContainer = document.getElementById("defContainer");
+        if(apiData.def !== undefined) {
+            defContainer.style.display = "inline";
+            document.getElementById("modalDef").textContent = apiData.def;
+        } else {
+             // Link monsters have no DEF
+            defContainer.style.display = "none";
+        }
+    } else {
+        statsDiv.style.display = "none";
+    }
+
+    document.getElementById("modalProduct").textContent = cardEntry['Product'] || 'Custom Add';
+    document.getElementById("modalCode").textContent = cardEntry['Set Code'] || 'N/A';
+    
+    modal.style.display = "block";
+}
+
+// Close Modal
+closeBtn.onclick = function() {
+    modal.style.display = "none";
+}
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.style.display = "none";
+    }
+}
+
 function renderCards(filterText = '') {
     grid.innerHTML = '';
     const collection = getCollection();
@@ -71,7 +130,8 @@ function renderCards(filterText = '') {
         const name = card['Card Name'];
         const qty = card['Quantity'];
         
-        let cardId = getCardIdFromName(name);
+        let apiData = getCardDataFromName(name);
+        let cardId = apiData ? apiData.id : null;
 
         const imgUrl = cardId 
             ? `https://images.ygoprodeck.com/images/cards/${cardId}.jpg`
@@ -87,11 +147,16 @@ function renderCards(filterText = '') {
                 <div class="card-meta">${card['Product'] || 'Custom Add'} • ${card['Set Code'] || 'No Code'}</div>
             </div>
         `;
+        
+        // Add click listener to open modal
+        if(apiData) {
+            cardEl.addEventListener('click', () => openModal(card, apiData));
+        }
+
         grid.appendChild(cardEl);
     });
 }
 
-// 4. Handle Add Card Form using Set Code OR Exact Name
 form.addEventListener('submit', (e) => {
     e.preventDefault();
     addStatus.textContent = '';
@@ -101,7 +166,6 @@ form.addEventListener('submit', (e) => {
     let foundCard = null;
     let foundSet = null;
 
-    // Search Strategy A: Try to match the exact Set Code
     for (const card of ygoDatabase) {
         if (card.card_sets) {
             const match = card.card_sets.find(s => s.set_code.toUpperCase() === input.toUpperCase());
@@ -113,7 +177,6 @@ form.addEventListener('submit', (e) => {
         }
     }
 
-    // Search Strategy B: Fallback to exact Card Name
     if (!foundCard) {
         foundCard = ygoDatabase.find(c => c.name.toLowerCase() === input.toLowerCase());
     }
@@ -163,5 +226,4 @@ clearLocalBtn.addEventListener('click', () => {
     }
 });
 
-// Boot up!
 fetchDatabase();
