@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yu-Gi-Oh! Collection Tracker</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Using PapaParse via CDN to easily read/write CSV files in the browser -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -18,26 +17,23 @@
     </header>
     
     <main>
-        <!-- The form to add new cards -->
         <section class="add-card-section">
             <h2>Add New Card</h2>
+            <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Search by the exact Set Code right under the artwork (e.g., L26D-EN522) OR the exact card name.</p>
             <form id="addCardForm">
-                <input type="text" id="productInput" placeholder="Product (e.g., Core Booster)" required>
-                <input type="text" id="themeInput" placeholder="Theme/Deck (e.g., Fiendsmith)" required>
-                <input type="text" id="cardNameInput" placeholder="Exact Card Name" required>
-                <input type="number" id="quantityInput" placeholder="Qty" min="1" required>
-                <button type="submit" class="btn">Add to Tracker</button>
+                <input type="text" id="codeInput" placeholder="Set Code OR Card Name" required>
+                <input type="number" id="quantityInput" placeholder="Qty" min="1" required value="1">
+                <button type="submit" class="btn primary">Add to Tracker</button>
             </form>
+            <div id="addStatus" style="margin-top: 10px; font-size: 0.9em; color: var(--danger);"></div>
         </section>
 
-        <!-- Search bar to filter cards -->
         <div class="controls">
-            <input type="text" id="searchInput" placeholder="Search your collection...">
+            <input type="text" id="searchInput" placeholder="Search your collection by name or code...">
         </div>
 
-        <!-- The grid where the JavaScript will inject the images and data -->
         <section id="cardGrid" class="card-grid">
-            <!-- Cards injected here via app.js -->
+            <div style="grid-column: 1 / -1; text-align: center; color: #aaa;">Loading Card Database...</div>
         </section>
     </main>
     <script src="app.js"></script>
