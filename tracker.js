@@ -9,10 +9,13 @@ const grid = document.getElementById('cardGrid');
 const form = document.getElementById('addCardForm');
 const searchInput = document.getElementById('searchInput');
 const typeFilter = document.getElementById('typeFilter');
+const attributeFilter = document.getElementById('attributeFilter');
+const levelFilter = document.getElementById('levelFilter');
 const sortFilter = document.getElementById('sortFilter');
 const exportBtn = document.getElementById('exportBtn');
 const clearLocalBtn = document.getElementById('clearLocalBtn');
 const totalValueDisplay = document.getElementById('totalValue');
+const cardCountDisplay = document.getElementById('cardCount');
 const addStatus = document.getElementById('addStatus');
 
 // Modal Elements
@@ -24,8 +27,10 @@ const modalPrice = document.getElementById("modalPrice");
 const banTcg = document.getElementById("banTcg");
 const banOcg = document.getElementById("banOcg");
 const banMd = document.getElementById("banMd");
+const modalAttribute = document.getElementById("modalAttribute");
 const modalRace = document.getElementById("modalRace");
 const modalType = document.getElementById("modalType");
+const modalLevel = document.getElementById("modalLevel");
 const modalDesc = document.getElementById("modalDesc");
 const atkContainer = document.getElementById("atkContainer");
 const modalAtk = document.getElementById("modalAtk");
@@ -37,7 +42,7 @@ const modalFirstRelease = document.getElementById("modalFirstRelease");
 const modalTCG = document.getElementById("modalTCG");
 const modalCM = document.getElementById("modalCM");
 
-// THE FIX: HTML Decoder
+// HTML Decoder to handle "&amp;" and other entities natively
 function decodeHTML(text) {
     if (!text) return "";
     const textArea = document.createElement('textarea');
@@ -78,41 +83,56 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
-// Render Logic
+// Render Logic & Advanced Filtering
 function renderCards() {
     if (!grid) return;
     grid.innerHTML = '';
     const fullCollection = getCollection();
+    
     let totalValue = 0;
+    let totalCards = 0;
 
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
     const typeVal = typeFilter ? typeFilter.value : 'All';
+    const attrVal = attributeFilter ? attributeFilter.value : 'All';
+    const lvlVal = levelFilter ? levelFilter.value : 'All';
     const sortVal = sortFilter ? sortFilter.value : 'name_asc';
 
     let displayData = fullCollection.map(item => {
-        // THE FIX: Decode the database name before comparing it to the CSV
-        const dbCard = ygoDatabase.find(c => decodeHTML(c.name).toLowerCase() === item['Card Name'].toLowerCase());
+        // Safe decoding matching
+        const dbCard = ygoDatabase.find(c => decodeHTML(c.name).toLowerCase() === decodeHTML(item['Card Name']).toLowerCase());
         let price = 0;
         if (dbCard && dbCard.card_prices && dbCard.card_prices[0]) {
             price = parseFloat(dbCard.card_prices[0].tcgplayer_price) || 0;
         }
-        totalValue += (price * (parseInt(item.Quantity) || 1));
-        return { item, dbCard, price };
+        const qty = parseInt(item.Quantity) || 1;
+        totalValue += (price * qty);
+        return { item, dbCard, price, qty };
     });
 
-    if (totalValueDisplay) totalValueDisplay.textContent = `$${totalValue.toFixed(2)}`;
-
-    // Filters
+    // Apply MD-Style Filters
     displayData = displayData.filter(data => {
-        const cardName = data.item['Card Name'].toLowerCase();
+        const cardName = decodeHTML(data.item['Card Name']).toLowerCase();
         const cardCode = (data.item['Set Code'] || '').toLowerCase();
         const matchesSearch = cardName.includes(searchTerm) || cardCode.includes(searchTerm);
 
         let matchesType = true;
-        if (typeVal !== 'All' && data.dbCard) {
-            matchesType = data.dbCard.type.includes(typeVal);
+        let matchesAttr = true;
+        let matchesLvl = true;
+
+        if (data.dbCard) {
+            if (typeVal !== 'All') matchesType = data.dbCard.type.includes(typeVal);
+            if (attrVal !== 'All') matchesAttr = (data.dbCard.attribute === attrVal);
+            if (lvlVal !== 'All') {
+                const cardLvl = data.dbCard.level || data.dbCard.linkval || -1;
+                matchesLvl = (cardLvl.toString() === lvlVal);
+            }
+        } else {
+            // If custom/unreleased card, hide it if strict filters are applied
+            if (typeVal !== 'All' || attrVal !== 'All' || lvlVal !== 'All') return false; 
         }
-        return matchesSearch && matchesType;
+
+        return matchesSearch && matchesType && matchesAttr && matchesLvl;
     });
 
     // Sorting
@@ -124,27 +144,37 @@ function renderCards() {
     });
 
     displayData.forEach(data => {
-        const { item, dbCard } = data;
+        const { item, dbCard, qty } = data;
+        totalCards += qty;
+
         const cardDiv = document.createElement('div');
         cardDiv.className = 'card-item';
         cardDiv.style.cursor = 'pointer';
-        cardDiv.style.background = '#1e1e1e';
+        cardDiv.style.background = '#2a2a2a';
         cardDiv.style.padding = '10px';
         cardDiv.style.borderRadius = '8px';
+        cardDiv.style.border = '1px solid #444';
+        cardDiv.style.transition = 'transform 0.2s';
+        
+        cardDiv.onmouseover = () => cardDiv.style.transform = 'scale(1.02)';
+        cardDiv.onmouseout = () => cardDiv.style.transform = 'scale(1)';
 
         const imgUrl = dbCard ? dbCard.card_images[0].image_url_small : `images/${item['Set Code']}.jpg`;
 
         cardDiv.innerHTML = `
             <img src="${imgUrl}" alt="${item['Card Name']}" onerror="this.src='https://images.ygoprodeck.com/images/cards/back_high.jpg'" style="width:100%; border-radius:4px; display:block;">
-            <div style="margin-top: 10px;">
-                <h3 style="font-size:1em; margin:0 0 5px 0;">${item['Card Name']}</h3>
-                <p style="font-size:0.8em; color:#aaa; margin:0;">${item['Set Code']} (x${item.Quantity})</p>
+            <div style="margin-top: 10px; text-align: center;">
+                <h3 style="font-size:0.9em; margin:0 0 5px 0; color: #fff;">${item['Card Name']}</h3>
+                <p style="font-size:0.8em; color:#aaa; margin:0;">${item['Set Code']} (x${qty})</p>
             </div>
         `;
 
         cardDiv.addEventListener('click', () => openModal(item, dbCard));
         grid.appendChild(cardDiv);
     });
+
+    if (totalValueDisplay) totalValueDisplay.textContent = `$${totalValue.toFixed(2)}`;
+    if (cardCountDisplay) cardCountDisplay.textContent = totalCards;
 }
 
 function getBanlistStatus(status) {
@@ -155,28 +185,38 @@ function getBanlistStatus(status) {
     return status;
 }
 
-// Modal Logic
+// Blended Modal Logic
 function openModal(item, dbCard) {
     try {
+        // Image & Core Data
         if (modalImage) {
             modalImage.src = dbCard ? dbCard.card_images[0].image_url : `images/${item['Set Code']}.jpg`;
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
         
-        if (modalName) modalName.textContent = item['Card Name'];
+        if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
+        if (modalAttribute) modalAttribute.textContent = dbCard && dbCard.attribute ? `${dbCard.attribute}` : "";
         if (modalRace) modalRace.textContent = dbCard ? (dbCard.race || "Unknown") : "N/A";
-        if (modalType) modalType.textContent = dbCard ? (dbCard.type || "Unknown") : "Custom / Unreleased";
+        if (modalType) modalType.textContent = dbCard ? (dbCard.type || "Custom") : "Custom / Unreleased";
         
-        // THE FIX: Decode description so HTML entities don't leak into the UI
+        // Level/Rank/Link calculation
+        if (modalLevel) {
+            let lvlStr = "";
+            if (dbCard) {
+                if (dbCard.level) lvlStr = ` | Level/Rank ${dbCard.level}`;
+                else if (dbCard.linkval) lvlStr = ` | Link-${dbCard.linkval}`;
+            }
+            modalLevel.textContent = lvlStr;
+        }
+
         if (modalDesc) modalDesc.textContent = dbCard ? decodeHTML(dbCard.desc || "No description available.") : "Card details not currently available in the official YGOPRODeck database.";
 
-        if (modalPrice) {
-            modalPrice.textContent = (dbCard && dbCard.card_prices && dbCard.card_prices[0]) 
-                ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
-        }
+        // Prices
+        if (modalPrice) modalPrice.textContent = (dbCard && dbCard.card_prices && dbCard.card_prices[0]) ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
         if (modalTCG) modalTCG.textContent = (dbCard && dbCard.card_prices) ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
         if (modalCM) modalCM.textContent = (dbCard && dbCard.card_prices) ? `€${dbCard.card_prices[0].cardmarket_price}` : "N/A";
 
+        // Banlist Logic (with specific overrides)
         const banlist = dbCard ? (dbCard.banlist_info || {}) : {};
         if (banTcg) banTcg.textContent = `TCG: ${getBanlistStatus(banlist.ban_tcg)}`;
         if (banOcg) banOcg.textContent = `OCG: ${getBanlistStatus(banlist.ban_ocg)}`;
@@ -188,6 +228,7 @@ function openModal(item, dbCard) {
         }
         if (banMd) banMd.textContent = `MD: ${mdStatus}`;
 
+        // ATK/DEF Handling
         const isSpellTrap = dbCard ? (dbCard.type.includes("Spell") || dbCard.type.includes("Trap")) : false;
         
         if (isSpellTrap || !dbCard) {
@@ -208,9 +249,29 @@ function openModal(item, dbCard) {
             }
         }
 
-        if (modalProduct) modalProduct.textContent = item['Product'] || "Unknown";
-        if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown";
-        if (modalFirstRelease) modalFirstRelease.textContent = (dbCard && dbCard.misc_info && dbCard.misc_info[0]) ? dbCard.misc_info[0].tcg_date : "N/A";
+        // Release Date Cross-Referencing
+        let mySetInfo = item['Product'] || "Unknown Product";
+        let firstSetInfo = "N/A";
+
+        if (dbCard && dbCard.card_sets && dbCard.card_sets.length > 0) {
+            // Find Earliest Date for First Released
+            let earliestSet = dbCard.card_sets.reduce((prev, curr) => {
+                if (!prev.set_date) return curr;
+                if (!curr.set_date) return prev;
+                return (new Date(prev.set_date) < new Date(curr.set_date)) ? prev : curr;
+            });
+            firstSetInfo = `${earliestSet.set_name} (${earliestSet.set_date || "Unknown Date"})`;
+
+            // Find Exact Printing Date
+            let mySet = dbCard.card_sets.find(s => s.set_code === item['Set Code']);
+            if (mySet) {
+                mySetInfo = `${mySet.set_name} (${mySet.set_date || "Unknown Date"})`;
+            }
+        }
+
+        if (modalProduct) modalProduct.textContent = mySetInfo;
+        if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown Code";
+        if (modalFirstRelease) modalFirstRelease.textContent = firstSetInfo;
 
         if (modal) modal.style.display = "block";
 
@@ -230,7 +291,6 @@ if (form) {
         const input = document.getElementById('codeInput').value.trim();
         const quantity = document.getElementById('quantityInput').value;
 
-        // THE FIX: Decode here as well for adding new cards
         let foundCard = ygoDatabase.find(c =>
             decodeHTML(c.name).toLowerCase() === input.toLowerCase() ||
             (c.card_sets && c.card_sets.some(s => s.set_code.toLowerCase() === input.toLowerCase()))
@@ -248,7 +308,7 @@ if (form) {
         const newCard = {
             'Product': foundSet ? foundSet.set_name : 'Custom Add',
             'Theme/Deck': foundCard.archetype || 'None',
-            'Card Name': decodeHTML(foundCard.name), // Save cleanly to local storage
+            'Card Name': decodeHTML(foundCard.name),
             'Set Code': foundSet ? foundSet.set_code : input.toUpperCase(),
             'Quantity': quantity
         };
@@ -266,6 +326,8 @@ if (form) {
 // Listeners
 if (searchInput) searchInput.addEventListener('input', renderCards);
 if (typeFilter) typeFilter.addEventListener('change', renderCards);
+if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
+if (levelFilter) levelFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
 if (exportBtn) {
