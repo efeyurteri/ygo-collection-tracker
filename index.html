@@ -9,7 +9,10 @@
 </head>
 <body>
     <header>
-        <h1>Yu-Gi-Oh! Collection Tracker</h1>
+        <div class="header-left">
+            <h1>Yu-Gi-Oh! Collection Tracker</h1>
+            <div class="portfolio-value">Total Value: <span id="totalValue">$0.00</span></div>
+        </div>
         <div class="actions">
             <button id="exportBtn" class="btn primary">Export to CSV</button>
             <button id="clearLocalBtn" class="btn danger">Clear Local Additions</button>
@@ -19,7 +22,6 @@
     <main>
         <section class="add-card-section">
             <h2>Add New Card</h2>
-            <p style="font-size: 0.85em; color: #aaa; margin-bottom: 15px;">Search by the exact Set Code right under the artwork (e.g., L26D-EN522) OR the exact card name.</p>
             <form id="addCardForm">
                 <input type="text" id="codeInput" placeholder="Set Code OR Card Name" required>
                 <input type="number" id="quantityInput" placeholder="Qty" min="1" required value="1">
@@ -28,9 +30,24 @@
             <div id="addStatus" style="margin-top: 10px; font-size: 0.9em; color: var(--danger);"></div>
         </section>
 
-        <div class="controls">
-            <input type="text" id="searchInput" placeholder="Search your collection by name or code...">
-        </div>
+        <section class="controls-bar">
+            <input type="text" id="searchInput" placeholder="Search name or code...">
+            
+            <select id="typeFilter">
+                <option value="All">All Types</option>
+                <option value="Monster">Monsters</option>
+                <option value="Spell">Spells</option>
+                <option value="Trap">Traps</option>
+            </select>
+
+            <select id="sortFilter">
+                <option value="name_asc">Name (A-Z)</option>
+                <option value="price_desc">Price (High to Low)</option>
+                <option value="atk_desc">ATK (High to Low)</option>
+                <option value="level_desc">Level/Rank (High to Low)</option>
+                <option value="qty_desc">Quantity Owned</option>
+            </select>
+        </section>
 
         <section id="cardGrid" class="card-grid">
             <div style="grid-column: 1 / -1; text-align: center; color: #aaa;">Loading Card Database...</div>
@@ -45,19 +62,30 @@
                     <img id="modalImage" src="" alt="Card Image">
                 </div>
                 <div class="modal-details">
-                    <h2 id="modalName">Card Name</h2>
+                    <div class="modal-header-row">
+                        <h2 id="modalName">Card Name</h2>
+                        <div class="modal-price-badge" id="modalPrice">$0.00</div>
+                    </div>
+                    
                     <div class="modal-meta-line">
                         <span id="modalAttribute" class="badge"></span>
                         <span id="modalLevel" class="badge"></span>
+                        <span id="modalRarity" class="badge rarity-badge"></span>
                     </div>
                     <p><strong>[ <span id="modalRace"></span> / <span id="modalType"></span> ]</strong></p>
+                    
                     <div class="modal-desc" id="modalDesc">Card description goes here.</div>
+                    
                     <div class="modal-stats">
-                        <span><strong>ATK/</strong> <span id="modalAtk"></span></span>
+                        <span id="atkContainer"><strong>ATK/</strong> <span id="modalAtk"></span></span>
                         <span id="defContainer"><strong>DEF/</strong> <span id="modalDef"></span></span>
                     </div>
                     <hr>
-                    <p style="color: #aaa; font-size: 0.9em;">From: <span id="modalProduct"></span> • Code: <span id="modalCode"></span></p>
+                    <div class="modal-footer-info">
+                        <p><strong>Printing:</strong> <span id="modalProduct"></span> (<span id="modalCode"></span>)</p>
+                        <p><strong>First Released:</strong> <span id="modalFirstRelease"></span></p>
+                        <p style="color:#aaa; font-size:0.85em; margin-top:10px;">Market Avg: <span id="modalTCG"></span> (NA) | <span id="modalCM"></span> (EU)</p>
+                    </div>
                 </div>
             </div>
         </div>
