@@ -37,6 +37,14 @@ const modalFirstRelease = document.getElementById("modalFirstRelease");
 const modalTCG = document.getElementById("modalTCG");
 const modalCM = document.getElementById("modalCM");
 
+// THE FIX: HTML Decoder
+function decodeHTML(text) {
+    if (!text) return "";
+    const textArea = document.createElement('textarea');
+    textArea.innerHTML = text;
+    return textArea.value;
+}
+
 // Initialize Data
 async function init() {
     try {
@@ -82,8 +90,8 @@ function renderCards() {
     const sortVal = sortFilter ? sortFilter.value : 'name_asc';
 
     let displayData = fullCollection.map(item => {
-        // Strict mapping by EXACT Card Name ensures custom/future set codes don't break the lookup
-        const dbCard = ygoDatabase.find(c => c.name.toLowerCase() === item['Card Name'].toLowerCase());
+        // THE FIX: Decode the database name before comparing it to the CSV
+        const dbCard = ygoDatabase.find(c => decodeHTML(c.name).toLowerCase() === item['Card Name'].toLowerCase());
         let price = 0;
         if (dbCard && dbCard.card_prices && dbCard.card_prices[0]) {
             price = parseFloat(dbCard.card_prices[0].tcgplayer_price) || 0;
@@ -124,10 +132,10 @@ function renderCards() {
         cardDiv.style.padding = '10px';
         cardDiv.style.borderRadius = '8px';
 
-        const imgUrl = dbCard ? dbCard.card_images[0].image_url_small : 'https://images.ygoprodeck.com/images/cards/back_high.jpg';
+        const imgUrl = dbCard ? dbCard.card_images[0].image_url_small : `images/${item['Set Code']}.jpg`;
 
         cardDiv.innerHTML = `
-            <img src="${imgUrl}" alt="${item['Card Name']}" style="width:100%; border-radius:4px; display:block;">
+            <img src="${imgUrl}" alt="${item['Card Name']}" onerror="this.src='https://images.ygoprodeck.com/images/cards/back_high.jpg'" style="width:100%; border-radius:4px; display:block;">
             <div style="margin-top: 10px;">
                 <h3 style="font-size:1em; margin:0 0 5px 0;">${item['Card Name']}</h3>
                 <p style="font-size:0.8em; color:#aaa; margin:0;">${item['Set Code']} (x${item.Quantity})</p>
@@ -147,38 +155,42 @@ function getBanlistStatus(status) {
     return status;
 }
 
-// Modal Logic (The Fix)
+// Modal Logic
 function openModal(item, dbCard) {
-    if (!dbCard) return alert("Card details not found in the database.");
-
     try {
-        // Image & Core Data
-        if (modalImage) modalImage.src = dbCard.card_images[0].image_url;
-        if (modalName) modalName.textContent = dbCard.name;
-        if (modalRace) modalRace.textContent = dbCard.race || "Unknown";
-        if (modalType) modalType.textContent = dbCard.type || "Unknown";
-        if (modalDesc) modalDesc.textContent = dbCard.desc || "No description available.";
+        if (modalImage) {
+            modalImage.src = dbCard ? dbCard.card_images[0].image_url : `images/${item['Set Code']}.jpg`;
+            modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
+        }
+        
+        if (modalName) modalName.textContent = item['Card Name'];
+        if (modalRace) modalRace.textContent = dbCard ? (dbCard.race || "Unknown") : "N/A";
+        if (modalType) modalType.textContent = dbCard ? (dbCard.type || "Unknown") : "Custom / Unreleased";
+        
+        // THE FIX: Decode description so HTML entities don't leak into the UI
+        if (modalDesc) modalDesc.textContent = dbCard ? decodeHTML(dbCard.desc || "No description available.") : "Card details not currently available in the official YGOPRODeck database.";
 
-        // Prices
         if (modalPrice) {
-            modalPrice.textContent = (dbCard.card_prices && dbCard.card_prices[0]) 
+            modalPrice.textContent = (dbCard && dbCard.card_prices && dbCard.card_prices[0]) 
                 ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
         }
-        if (modalTCG && dbCard.card_prices) modalTCG.textContent = `$${dbCard.card_prices[0].tcgplayer_price}`;
-        if (modalCM && dbCard.card_prices) modalCM.textContent = `€${dbCard.card_prices[0].cardmarket_price}`;
+        if (modalTCG) modalTCG.textContent = (dbCard && dbCard.card_prices) ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
+        if (modalCM) modalCM.textContent = (dbCard && dbCard.card_prices) ? `€${dbCard.card_prices[0].cardmarket_price}` : "N/A";
 
-        // Banlist Logic (Handles standard sync + silent Master Duel accuracy overrides)
-        const banlist = dbCard.banlist_info || {};
+        const banlist = dbCard ? (dbCard.banlist_info || {}) : {};
         if (banTcg) banTcg.textContent = `TCG: ${getBanlistStatus(banlist.ban_tcg)}`;
         if (banOcg) banOcg.textContent = `OCG: ${getBanlistStatus(banlist.ban_ocg)}`;
         
         let mdStatus = getBanlistStatus(banlist.ban_md);
-        if (dbCard.name === 'Maxx "C"') mdStatus = "1 / Limited";
-        if (dbCard.name === "Pre-Preparation of Rites") mdStatus = "3 / Unlim.";
+        if (dbCard) {
+            if (dbCard.name === 'Maxx "C"') mdStatus = "1 / Limited";
+            if (dbCard.name === "Pre-Preparation of Rites") mdStatus = "3 / Unlim.";
+        }
         if (banMd) banMd.textContent = `MD: ${mdStatus}`;
 
-        // The ATK/DEF Bug Fix: Check card type BEFORE checking for stats
-        if (dbCard.type.includes("Spell") || dbCard.type.includes("Trap")) {
+        const isSpellTrap = dbCard ? (dbCard.type.includes("Spell") || dbCard.type.includes("Trap")) : false;
+        
+        if (isSpellTrap || !dbCard) {
             if (atkContainer) atkContainer.style.display = 'none';
             if (defContainer) defContainer.style.display = 'none';
         } else {
@@ -196,15 +208,14 @@ function openModal(item, dbCard) {
             }
         }
 
-        // Footer Info
         if (modalProduct) modalProduct.textContent = item['Product'] || "Unknown";
         if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown";
-        if (modalFirstRelease) modalFirstRelease.textContent = (dbCard.misc_info && dbCard.misc_info[0]) ? dbCard.misc_info[0].tcg_date : "N/A";
+        if (modalFirstRelease) modalFirstRelease.textContent = (dbCard && dbCard.misc_info && dbCard.misc_info[0]) ? dbCard.misc_info[0].tcg_date : "N/A";
 
         if (modal) modal.style.display = "block";
 
     } catch (error) {
-        console.error("Critical error building modal, state protected: ", error);
+        console.error("Critical error building modal: ", error);
     }
 }
 
@@ -219,8 +230,9 @@ if (form) {
         const input = document.getElementById('codeInput').value.trim();
         const quantity = document.getElementById('quantityInput').value;
 
+        // THE FIX: Decode here as well for adding new cards
         let foundCard = ygoDatabase.find(c =>
-            c.name.toLowerCase() === input.toLowerCase() ||
+            decodeHTML(c.name).toLowerCase() === input.toLowerCase() ||
             (c.card_sets && c.card_sets.some(s => s.set_code.toLowerCase() === input.toLowerCase()))
         );
 
@@ -236,7 +248,7 @@ if (form) {
         const newCard = {
             'Product': foundSet ? foundSet.set_name : 'Custom Add',
             'Theme/Deck': foundCard.archetype || 'None',
-            'Card Name': foundCard.name,
+            'Card Name': decodeHTML(foundCard.name), // Save cleanly to local storage
             'Set Code': foundSet ? foundSet.set_code : input.toUpperCase(),
             'Quantity': quantity
         };
