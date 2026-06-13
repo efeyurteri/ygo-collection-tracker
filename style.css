@@ -25,6 +25,18 @@ header {
     margin-bottom: 20px;
 }
 
+.header-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.portfolio-value {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #4caf50;
+    margin-top: 5px;
+}
+
 /* Standard UI Buttons */
 .btn {
     background-color: #333;
@@ -78,8 +90,34 @@ input:focus {
     border-color: transparent;
 }
 
-.controls { margin-bottom: 20px; }
-.controls input { width: 100%; box-sizing: border-box; }
+.controls-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+    background: var(--surface);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+.controls-bar input {
+    flex: 2;
+    margin-bottom: 0;
+}
+
+.controls-bar select {
+    flex: 1;
+    padding: 10px;
+    background: #2a2a2a;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.controls-bar select:focus {
+    outline: 2px solid var(--primary);
+}
 
 /* Core Collection Grid Styling */
 .card-grid {
@@ -99,6 +137,8 @@ input:focus {
     border: 1px solid #333;
     cursor: pointer;
     transition: transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    flex-direction: column;
 }
 
 .card:hover {
@@ -115,7 +155,10 @@ input:focus {
     object-fit: cover;
 }
 
-.card-info { padding: 10px; }
+.card-info { 
+    padding: 10px;
+    flex-grow: 1;
+}
 
 .card-title {
     font-size: 0.9em;
@@ -141,6 +184,36 @@ input:focus {
 .card-meta {
     font-size: 0.7em;
     color: #aaa;
+}
+
+/* Quantity Controls on Card */
+.qty-controls {
+    display: flex;
+    justify-content: space-between;
+    background: #1a1a1a;
+    border-top: 1px solid #333;
+}
+
+.qty-btn {
+    flex: 1;
+    background: transparent;
+    color: var(--primary);
+    border: none;
+    padding: 10px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.qty-btn:hover {
+    background: #333;
+    color: white;
+}
+
+.qty-btn.minus-btn {
+    border-right: 1px solid #333;
+    color: var(--danger);
 }
 
 /* Modal Pop-up Layout Styling */
@@ -213,13 +286,31 @@ input:focus {
     justify-content: space-between;
 }
 
-.modal-details h2 {
-    margin-top: 0;
-    font-size: 1.8em;
-    color: white;
+.modal-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     border-bottom: 2px solid #333;
     padding-bottom: 10px;
     margin-bottom: 12px;
+}
+
+.modal-header-row h2 {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+    font-size: 1.8em;
+    color: white;
+}
+
+.modal-price-badge {
+    font-size: 1.4em;
+    font-weight: bold;
+    color: #4caf50;
+    background: #1a1a1a;
+    padding: 5px 15px;
+    border-radius: 20px;
+    border: 1px solid #4caf50;
 }
 
 .modal-meta-line {
@@ -236,6 +327,11 @@ input:focus {
     font-weight: bold;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+.rarity-badge {
+    background: linear-gradient(45deg, #b8860b, #ffd700);
+    color: #000;
 }
 
 .modal-desc {
@@ -268,7 +364,12 @@ hr {
     margin: 15px 0;
 }
 
-/* Responsive Viewports for Mobile Interfaces */
+.modal-footer-info p {
+    margin: 5px 0;
+    font-size: 0.9em;
+}
+
+/* Responsive Viewports */
 @media (max-width: 768px) {
     .modal-body {
         flex-direction: column;
@@ -278,117 +379,6 @@ hr {
         width: 100%;
         max-width: 280px;
     }
-}
-
-/* Quantity Controls on Card Hover */
-.qty-controls {
-    display: flex;
-    justify-content: space-between;
-    background: #1a1a1a;
-    border-top: 1px solid #333;
-}
-
-.qty-btn {
-    flex: 1;
-    background: transparent;
-    color: var(--primary);
-    border: none;
-    padding: 10px;
-    font-size: 1.2em;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s;
-}
-
-.qty-btn:hover {
-    background: #333;
-    color: white;
-}
-
-.qty-btn.minus-btn {
-    border-right: 1px solid #333;
-    color: var(--danger);
-}
-
-/* Dashboard & Control Bar Styling */
-.header-left {
-    display: flex;
-    flex-direction: column;
-}
-
-.portfolio-value {
-    font-size: 1.5em;
-    font-weight: bold;
-    color: #4caf50; /* Money Green */
-    margin-top: 5px;
-}
-
-.controls-bar {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-    background: var(--surface);
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #333;
-}
-
-.controls-bar input {
-    flex: 2;
-    margin-bottom: 0;
-}
-
-.controls-bar select {
-    flex: 1;
-    padding: 10px;
-    background: #2a2a2a;
-    color: white;
-    border: 1px solid #444;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.controls-bar select:focus {
-    outline: 2px solid var(--primary);
-}
-
-/* Expanded Modal Details */
-.modal-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #333;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
-}
-
-.modal-header-row h2 {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
-
-.modal-price-badge {
-    font-size: 1.4em;
-    font-weight: bold;
-    color: #4caf50;
-    background: #1a1a1a;
-    padding: 5px 15px;
-    border-radius: 20px;
-    border: 1px solid #4caf50;
-}
-
-.rarity-badge {
-    background: linear-gradient(45deg, #b8860b, #ffd700);
-    color: #000;
-}
-
-.modal-footer-info p {
-    margin: 5px 0;
-    font-size: 0.9em;
-}
-
-@media (max-width: 768px) {
     .controls-bar {
         flex-direction: column;
     }
