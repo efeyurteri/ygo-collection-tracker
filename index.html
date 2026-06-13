@@ -8,37 +8,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 </head>
 <body>
-    <header>
+    <header style="display: flex; justify-content: space-between; align-items: center; padding: 20px; background-color: var(--surface, #1e1e1e); border-bottom: 2px solid #333;">
         <div class="header-left">
-            <h1>Yu-Gi-Oh! Collection Tracker</h1>
-            <div class="portfolio-value">Total Value: <span id="totalValue">$0.00</span></div>
+            <h1 style="margin: 0;">Yu-Gi-Oh! Collection Tracker</h1>
+            <div class="actions" style="margin-top: 10px;">
+                <button id="exportBtn" class="btn primary">Export to CSV</button>
+                <button id="clearLocalBtn" class="btn danger">Clear Local Additions</button>
+            </div>
         </div>
-        <div class="actions">
-            <button id="exportBtn" class="btn primary">Export to CSV</button>
-            <button id="clearLocalBtn" class="btn danger">Clear Local Additions</button>
+        <div class="header-right" style="text-align: right;">
+            <div class="portfolio-value" style="font-size: 1.5em;">Total Value: <span id="totalValue" style="color: #4caf50; font-weight: bold;">$0.00</span></div>
+            <div class="card-count" style="font-size: 1.1em; margin-top: 5px; color: #aaa;">Total Cards: <span id="cardCount" style="color: white; font-weight: bold;">0</span></div>
         </div>
     </header>
     
-    <main>
-        <section class="add-card-section">
-            <h2>Add New Card</h2>
-            <form id="addCardForm">
-                <input type="text" id="codeInput" placeholder="Set Code OR Card Name" required>
-                <input type="number" id="quantityInput" placeholder="Qty" min="1" required value="1">
-                <button type="submit" class="btn primary">Add to Tracker</button>
+    <main style="padding: 20px;">
+        <section class="add-card-section" style="background: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="margin-top: 0;">Add New Card</h2>
+            <form id="addCardForm" style="display: flex; gap: 10px;">
+                <input type="text" id="codeInput" placeholder="Set Code OR Card Name" required style="flex-grow: 1; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
+                <input type="number" id="quantityInput" placeholder="Qty" min="1" required value="1" style="width: 80px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
+                <button type="submit" class="btn primary" style="padding: 10px 20px; background: #6200ee; border: none; color: white; border-radius: 4px; cursor: pointer;">Add to Tracker</button>
             </form>
             <div id="addStatus" style="margin-top: 10px; font-size: 0.9em; font-weight: bold;"></div>
         </section>
 
-        <section class="filters" style="margin: 20px 0; display: flex; gap: 10px;">
-            <input type="text" id="searchInput" placeholder="Search your collection..." style="flex-grow: 1; padding: 8px;">
-            <select id="typeFilter" style="padding: 8px;">
+        <section class="filters" style="margin: 20px 0; display: flex; gap: 10px; flex-wrap: wrap; background: #1e1e1e; padding: 15px; border-radius: 8px;">
+            <input type="text" id="searchInput" placeholder="Search card name or set code..." style="flex-grow: 1; min-width: 200px; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
+            
+            <select id="typeFilter" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
                 <option value="All">All Types</option>
                 <option value="Monster">Monsters</option>
                 <option value="Spell">Spells</option>
                 <option value="Trap">Traps</option>
             </select>
-            <select id="sortFilter" style="padding: 8px;">
+
+            <select id="attributeFilter" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
+                <option value="All">All Attributes</option>
+                <option value="DARK">DARK</option>
+                <option value="LIGHT">LIGHT</option>
+                <option value="EARTH">EARTH</option>
+                <option value="WATER">WATER</option>
+                <option value="FIRE">FIRE</option>
+                <option value="WIND">WIND</option>
+                <option value="DIVINE">DIVINE</option>
+            </select>
+
+            <select id="levelFilter" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
+                <option value="All">All Levels/Links</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+            </select>
+
+            <select id="sortFilter" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
                 <option value="name_asc">Name (A-Z)</option>
                 <option value="name_desc">Name (Z-A)</option>
                 <option value="price_desc">Price (High-Low)</option>
@@ -49,39 +81,44 @@
     </main>
 
     <div id="cardModal" class="modal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.8);">
-        <div class="modal-content" style="background-color: var(--surface, #1e1e1e); margin: 5% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 800px; position: relative; border-radius: 8px;">
-            <span class="close-btn" style="position:absolute; right:20px; top:15px; font-size:28px; font-weight:bold; cursor:pointer;">&times;</span>
+        <div class="modal-content" style="background-color: var(--surface, #1e1e1e); margin: 5% auto; padding: 20px; border: 1px solid #444; width: 85%; max-width: 900px; position: relative; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <span class="close-btn" style="position:absolute; right:20px; top:15px; font-size:28px; font-weight:bold; cursor:pointer; color: #aaa;">&times;</span>
             
-            <div class="modal-body" style="display: flex; gap: 25px; margin-top: 10px;">
-                <img id="modalImage" src="" alt="Card Image" style="width: 280px; height: auto; object-fit: contain; border-radius: 8px;">
+            <div class="modal-body" style="display: flex; gap: 30px; margin-top: 10px; flex-wrap: wrap;">
+                <div class="modal-image-container" style="flex: 0 0 300px;">
+                    <img id="modalImage" src="" alt="Card Image" style="width: 100%; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                </div>
                 
-                <div class="modal-info" style="flex-grow: 1; display: flex; flex-direction: column;">
-                    <div class="modal-header-row" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 12px;">
-                        <h2 id="modalName" style="margin: 0; font-size: 1.8em; color: white;">Card Name</h2>
-                        <span class="modal-price-badge" id="modalPrice" style="font-size: 1.4em; font-weight: bold; color: #4caf50; background: #1a1a1a; padding: 5px 15px; border-radius: 20px; border: 1px solid #4caf50;">$0.00</span>
+                <div class="modal-info" style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
+                    <div class="modal-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 15px;">
+                        <div>
+                            <h2 id="modalName" style="margin: 0 0 5px 0; font-size: 2em; color: white;">Card Name</h2>
+                            <p style="margin: 0; color: #ddd; font-size: 1.1em;">
+                                <strong>[ <span id="modalAttribute"></span> <span id="modalRace"></span> / <span id="modalType"></span> ] <span id="modalLevel"></span></strong>
+                            </p>
+                        </div>
+                        <span class="modal-price-badge" id="modalPrice" style="font-size: 1.4em; font-weight: bold; color: #4caf50; background: #1a1a1a; padding: 8px 18px; border-radius: 20px; border: 1px solid #4caf50; margin-left: 15px;">$0.00</span>
                     </div>
 
-                    <div class="banlist-container" style="margin-bottom: 12px; display: flex; gap: 10px;">
-                        <span class="badge" id="banTcg" style="background: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">TCG: 3 / Unlim.</span>
-                        <span class="badge" id="banOcg" style="background: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">OCG: 3 / Unlim.</span>
-                        <span class="badge" id="banMd" style="background: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.85em; font-weight: bold;">MD: 3 / Unlim.</span>
-                    </div>
-
-                    <p><strong>[ <span id="modalRace"></span> / <span id="modalType"></span> ]</strong></p>
-                    
-                    <div class="modal-desc" id="modalDesc" style="background: #2a2a2a; padding: 18px; border-radius: 6px; line-height: 1.6; flex-grow: 1; margin-bottom: 15px;"></div>
-                    
-                    <div class="modal-stats" style="font-size: 1.1em; background: #1a1a1a; padding: 10px 15px; border-radius: 6px; display: inline-block;">
-                        <span id="atkContainer"><strong>ATK/</strong> <span id="modalAtk"></span></span>
-                        <span id="defContainer" style="margin-left: 20px;"><strong>DEF/</strong> <span id="modalDef"></span></span>
+                    <div class="banlist-container" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <span class="badge" id="banTcg" style="background: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.9em; font-weight: bold;">TCG: 3 / Unlim.</span>
+                        <span class="badge" id="banOcg" style="background: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.9em; font-weight: bold;">OCG: 3 / Unlim.</span>
+                        <span class="badge" id="banMd" style="background: #333; padding: 6px 12px; border-radius: 4px; font-size: 0.9em; font-weight: bold;">MD: 3 / Unlim.</span>
                     </div>
                     
-                    <hr style="border-top: 1px solid #333; width: 100%; margin: 15px 0;">
+                    <div class="modal-desc" id="modalDesc" style="background: #2a2a2a; padding: 20px; border-radius: 8px; line-height: 1.6; font-size: 1.05em; flex-grow: 1; margin-bottom: 15px; white-space: pre-wrap;"></div>
                     
-                    <div class="modal-footer-info" style="font-size: 0.9em;">
-                        <p style="margin: 4px 0;"><strong>Your Printing:</strong> <span id="modalProduct"></span> (<span id="modalCode"></span>)</p>
-                        <p style="margin: 4px 0;"><strong>First Released:</strong> <span id="modalFirstRelease"></span></p>
-                        <p style="color:#aaa; font-size:0.85em; margin-top:10px;">Market Avg: <span id="modalTCG"></span> (NA) | <span id="modalCM"></span> (EU)</p>
+                    <div class="modal-stats" style="font-size: 1.2em; background: #1a1a1a; padding: 12px 20px; border-radius: 8px; display: inline-block; align-self: flex-start;">
+                        <span id="atkContainer"><strong>ATK /</strong> <span id="modalAtk"></span></span>
+                        <span id="defContainer" style="margin-left: 25px;"><strong>DEF /</strong> <span id="modalDef"></span></span>
+                    </div>
+                    
+                    <hr style="border-top: 1px solid #333; width: 100%; margin: 20px 0;">
+                    
+                    <div class="modal-footer-info" style="font-size: 0.95em; color: #ccc;">
+                        <p style="margin: 6px 0;"><strong>Your Printing:</strong> <span id="modalProduct"></span> (<span id="modalCode" style="color: #fff; font-weight: bold;"></span>)</p>
+                        <p style="margin: 6px 0;"><strong>First Released:</strong> <span id="modalFirstRelease"></span></p>
+                        <p style="color:#888; font-size:0.9em; margin-top:15px;">Market Average: TCGPlayer <span id="modalTCG"></span> | Cardmarket <span id="modalCM"></span></p>
                     </div>
                 </div>
             </div>
