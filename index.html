@@ -32,14 +32,12 @@
 
         <section class="controls-bar">
             <input type="text" id="searchInput" placeholder="Search name or code...">
-            
             <select id="typeFilter">
                 <option value="All">All Types</option>
                 <option value="Monster">Monsters</option>
                 <option value="Spell">Spells</option>
                 <option value="Trap">Traps</option>
             </select>
-
             <select id="sortFilter">
                 <option value="name_asc">Name (A-Z)</option>
                 <option value="price_desc">Price (High to Low)</option>
@@ -72,6 +70,13 @@
                         <span id="modalLevel" class="badge"></span>
                         <span id="modalRarity" class="badge rarity-badge"></span>
                     </div>
+
+                    <div class="banlist-container" style="margin-bottom: 12px; display: flex; gap: 10px;">
+                        <span class="badge" id="banTcg">TCG: 3️⃣ Unlim.</span>
+                        <span class="badge" id="banOcg">OCG: 3️⃣ Unlim.</span>
+                        <span class="badge" id="banMd">MD: 3️⃣ Unlim.</span>
+                    </div>
+
                     <p><strong>[ <span id="modalRace"></span> / <span id="modalType"></span> ]</strong></p>
                     
                     <div class="modal-desc" id="modalDesc">Card description goes here.</div>
@@ -82,7 +87,7 @@
                     </div>
                     <hr>
                     <div class="modal-footer-info">
-                        <p><strong>Printing:</strong> <span id="modalProduct"></span> (<span id="modalCode"></span>)</p>
+                        <p><strong>Your Printing:</strong> <span id="modalProduct"></span> (<span id="modalCode"></span>)</p>
                         <p><strong>First Released:</strong> <span id="modalFirstRelease"></span></p>
                         <p style="color:#aaa; font-size:0.85em; margin-top:10px;">Market Avg: <span id="modalTCG"></span> (NA) | <span id="modalCM"></span> (EU)</p>
                     </div>
