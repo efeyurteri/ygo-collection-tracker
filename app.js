@@ -45,6 +45,7 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
+// Fixed Search Engine - Restored Exact Matching for Tokens
 function getCardDataFromCodeOrName(code, name) {
     if (code && code !== 'N/A' && code !== 'No Code') {
         const cleanCode = code.trim().toUpperCase();
@@ -57,9 +58,6 @@ function getCardDataFromCodeOrName(code, name) {
     if (name) {
         const lowerName = name.trim().toLowerCase();
         let found = ygoDatabase.find(c => c.name.toLowerCase() === lowerName);
-        if (found) return found;
-        const simplifiedSearch = lowerName.replace(/[^a-z0-9]/g, '');
-        found = ygoDatabase.find(c => c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === simplifiedSearch);
         if (found) return found;
     }
     return null;
@@ -173,6 +171,7 @@ function openModal(cardEntry, apiData) {
         document.getElementById("modalTCG").textContent = formatPrice(tcgPrice);
         document.getElementById("modalCM").textContent = "€" + (cmPrice || "0.00");
 
+        // The Repaired Rarity Logic
         const setData = getSpecificSetData(apiData, cardEntry['Set Code']);
         const rarityEl = document.getElementById("modalRarity");
         const priceEl = document.getElementById("modalPrice");
@@ -181,8 +180,15 @@ function openModal(cardEntry, apiData) {
             rarityEl.textContent = `Rarity: ${setData.set_rarity}`;
             rarityEl.style.display = "inline-block";
         } else {
-            rarityEl.textContent = `Rarity: Unknown`;
-            rarityEl.style.display = "inline-block";
+            // Only fall back to another printing if we absolutely have to, but strip out "(est)" tags.
+            let fallbackRarity = apiData.card_sets ? apiData.card_sets[0].set_rarity : null;
+            if (fallbackRarity) {
+                 rarityEl.textContent = `Rarity: ${fallbackRarity.replace('(est)','').trim()}`;
+                 rarityEl.style.display = "inline-block";
+            } else {
+                 rarityEl.textContent = `Rarity: Not Found`;
+                 rarityEl.style.display = "inline-block";
+            }
         }
         priceEl.textContent = formatPrice(getCardPrice(apiData, cardEntry['Set Code']));
 
@@ -195,7 +201,7 @@ function openModal(cardEntry, apiData) {
         document.getElementById("modalLevel").style.display = "none";
         
         const rarityEl = document.getElementById("modalRarity");
-        rarityEl.textContent = `Rarity: Unknown`;
+        rarityEl.textContent = `Rarity: Not Found`;
         rarityEl.style.display = "inline-block";
         
         document.getElementById("modalFirstRelease").textContent = "Unknown";
