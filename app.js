@@ -45,7 +45,6 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
-// Upgraded Search Engine
 function getCardDataFromCodeOrName(code, name) {
     if (code && code !== 'N/A' && code !== 'No Code') {
         const cleanCode = code.trim().toUpperCase();
@@ -72,7 +71,6 @@ function getSpecificSetData(apiData, setCode) {
     return apiData.card_sets.find(s => s.set_code.toUpperCase() === cleanCode);
 }
 
-// Rock-solid Price Calculator
 function getCardPrice(apiData, setCode) {
     if (!apiData) return 0;
     const setData = getSpecificSetData(apiData, setCode);
@@ -161,12 +159,10 @@ function openModal(cardEntry, apiData) {
             defContainer.style.display = "none";
         }
 
-        // Banlist Info
         document.getElementById("banTcg").innerHTML = `TCG: ${formatBanStatus(getBanStatus(apiData, "tcg"))}`;
         document.getElementById("banOcg").innerHTML = `OCG: ${formatBanStatus(getBanStatus(apiData, "ocg"))}`;
         document.getElementById("banMd").innerHTML = `MD: ${formatBanStatus(getBanStatus(apiData, "md"))}`;
 
-        // Release Dates & Market Info
         const tcgDate = apiData.misc_info && apiData.misc_info[0].tcg_date ? apiData.misc_info[0].tcg_date : "Unknown";
         const ocgDate = apiData.misc_info && apiData.misc_info[0].ocg_date ? apiData.misc_info[0].ocg_date : "Unknown";
         const firstSetName = apiData.card_sets ? apiData.card_sets[0].set_name : "Unknown Set";
@@ -182,26 +178,30 @@ function openModal(cardEntry, apiData) {
         const priceEl = document.getElementById("modalPrice");
         
         if (setData && setData.set_rarity) {
-            rarityEl.textContent = setData.set_rarity;
+            rarityEl.textContent = `Rarity: ${setData.set_rarity}`;
             rarityEl.style.display = "inline-block";
         } else {
-            let fallbackRarity = apiData.card_sets ? apiData.card_sets[0].set_rarity : null;
-            if (fallbackRarity) {
-                rarityEl.textContent = fallbackRarity + " (Est.)";
-                rarityEl.style.display = "inline-block";
-            } else { rarityEl.style.display = "none"; }
+            rarityEl.textContent = `Rarity: Unknown`;
+            rarityEl.style.display = "inline-block";
         }
         priceEl.textContent = formatPrice(getCardPrice(apiData, cardEntry['Set Code']));
 
     } else {
         document.getElementById("modalImage").src = `https://images.ygoprodeck.com/images/cards/back_high.jpg`;
         document.getElementById("modalName").textContent = cardEntry['Card Name'];
-        document.getElementById("modalDesc").textContent = "Card data loading...";
+        document.getElementById("modalDesc").textContent = "Card data loading or not indexed...";
         document.getElementById("modalPrice").textContent = "$0.00";
         document.getElementById("modalAttribute").style.display = "none";
         document.getElementById("modalLevel").style.display = "none";
-        document.getElementById("modalRarity").style.display = "none";
+        
+        const rarityEl = document.getElementById("modalRarity");
+        rarityEl.textContent = `Rarity: Unknown`;
+        rarityEl.style.display = "inline-block";
+        
         document.getElementById("modalFirstRelease").textContent = "Unknown";
+        document.getElementById("banTcg").innerHTML = `TCG: 3️⃣ Unlim.`;
+        document.getElementById("banOcg").innerHTML = `OCG: 3️⃣ Unlim.`;
+        document.getElementById("banMd").innerHTML = `MD: 3️⃣ Unlim.`;
     }
 
     document.getElementById("modalProduct").textContent = cardEntry['Product'] || 'Custom Add';
@@ -282,7 +282,7 @@ function renderCards() {
         if (sortMode === "price_desc") {
             const priceA = getCardPrice(apiA, a['Set Code']);
             const priceB = getCardPrice(apiB, b['Set Code']);
-            return priceB - priceA; // Exact floating point math!
+            return priceB - priceA; 
         }
         return 0;
     });
