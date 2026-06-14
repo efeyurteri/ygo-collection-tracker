@@ -259,7 +259,7 @@ function applyCardMask(dbCard) {
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (Yıldızlar biraz sola kaydırıldı ve araları açıldı)
+    // 3. Level/Rank Stars (SADECE BURASI DEĞİŞTİ - Yıldızlar düzeltildi)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
@@ -268,8 +268,9 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Xyz (42) ve Normal (297) başlangıcı. Aralık 23.0 olarak açıldı. Oran: 354.
-            let offsetX = isXyz ? (42 + (i * 23.0)) : (297 - (i * 23.0));
+            // Yeni Oranlar: Sağdan (Normal) başlama: 290. Aradaki boşluk: 23.5. 
+            // 354'e bölünerek tam oturtuldu.
+            let offsetX = isXyz ? (42 + (i * 23.5)) : (290 - (i * 23.5));
             let xPercent = (offsetX / 354) * 100;
             maskPositions.push(`${xPercent}% 12.75%`);
         }
@@ -563,8 +564,11 @@ if (tiltContainer && tiltWrapper && foilLayer) {
             let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
             
             foilLayer.style.setProperty('--o', opacityCalc);
-            foilLayer.style.setProperty('--x', `${x * 0.5}px`);
-            foilLayer.style.setProperty('--y', `${y * 0.5}px`);
+            
+            // SADECE BURASI DEĞİŞTİ: Efekti daha güçlü ve hareketli yapmak için 
+            // x ve y kayma oranı 0.5'ten 1.25'e çıkarıldı.
+            foilLayer.style.setProperty('--x', `${x * 1.25}px`);
+            foilLayer.style.setProperty('--y', `${y * 1.25}px`);
         } else {
             foilLayer.style.setProperty('--o', '0');
         }
