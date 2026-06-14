@@ -3,6 +3,7 @@ const CSV_FILE = 'YuGiOh_Collection_Tracker.csv';
 let baseCollection = [];
 let localAdditions = JSON.parse(localStorage.getItem('ygo_local_additions')) || [];
 let ygoDatabase = [];
+let ygoSets = []; // NEW: Secondary database specifically for set release dates
 
 // DOM Elements
 const grid = document.getElementById('cardGrid');
@@ -67,14 +68,23 @@ async function init() {
     } catch (err) { fetchDatabase(); }
 }
 
+// THE FIX: Fetching both the Card Database AND the Set Timeline
 async function fetchDatabase() {
     try {
-        const response = await fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php');
-        const data = await response.json();
-        ygoDatabase = data.data;
+        const [cardsRes, setsRes] = await Promise.all([
+            fetch('https://db.ygoprodeck.com/api/v7/cardinfo.php'),
+            fetch('https://db.ygoprodeck.com/api/v7/cardsets.php')
+        ]);
+        
+        const cardsData = await cardsRes.json();
+        const setsData = await setsRes.json();
+        
+        ygoDatabase = cardsData.data;
+        ygoSets = setsData; // Load the historical set dates
+        
         renderCards();
     } catch (err) {
-        console.error("Failed to fetch YGO database:", err);
+        console.error("Failed to fetch YGO databases:", err);
     }
 }
 
@@ -136,7 +146,6 @@ function renderCards() {
         if (sortVal === 'name_desc') return b.item['Card Name'].localeCompare(a.item['Card Name']);
         if (sortVal === 'price_desc') return b.price - a.price;
         
-        // Advanced MD Sorting Logic
         if (sortVal === 'atk_desc') {
             const atkA = (a.dbCard && a.dbCard.atk !== undefined) ? a.dbCard.atk : -1;
             const atkB = (b.dbCard && b.dbCard.atk !== undefined) ? b.dbCard.atk : -1;
@@ -208,7 +217,6 @@ function openModal(item, dbCard) {
         if (modalRace) modalRace.textContent = dbCard ? (dbCard.race || "Unknown") : "N/A";
         if (modalType) modalType.textContent = dbCard ? (dbCard.type || "Custom") : "Custom / Unreleased";
         
-        // Exact Level / Rank / Link logic
         if (modalLevel) {
             let lvlStr = "";
             if (dbCard) {
@@ -260,14 +268,55 @@ function openModal(item, dbCard) {
             }
         }
 
-        // Reliable Release Dates (Reverted to Turn 1 Logic)
-        if (modalProduct) modalProduct.textContent = item['Product'] || "Unknown";
-        if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown";
-        if (modalFirstRelease) {
-            modalFirstRelease.textContent = (dbCard && dbCard.misc_info && dbCard.misc_info[0] && dbCard.misc_info[0].tcg_date) 
-                ? dbCard.misc_info[0].tcg_date 
-                : "N/A";
+        // THE FIX: Reliable Release Dates cross-referenced against the secondary API
+        let mySetInfo = item['Product'] || "Unknown Product";
+        let firstSetInfo = "N/A";
+
+        // Extract the prefix (e.g., "L26D" from "L26D-ENS01")
+        const mySetPrefix = (item['Set Code'] || "").split('-')[0];
+        let mySetDate = "Unknown Date";
+        
+        // Handle custom 2026 sets manually, otherwise search the API timeline
+        if (mySetPrefix === "L26D") {
+            mySetDate = "2026"; 
+        } else if (ygoSets.length > 0) {
+            const foundSet = ygoSets.find(s => s.set_code === mySetPrefix);
+            if (foundSet && foundSet.tcg_date) {
+                mySetDate = foundSet.tcg_date;
+            }
         }
+        mySetInfo = `${mySetInfo} (${mySetDate})`;
+
+        if (dbCard) {
+            let earliestSet = "Unknown Set";
+            let earliestDate = "9999-99-99";
+            
+            const officialFirstDate = (dbCard.misc_info && dbCard.misc_info[0] && dbCard.misc_info[0].tcg_date) ? dbCard.misc_info[0].tcg_date : null;
+
+            // Search the timeline to find the absolute oldest printing of this specific card
+            if (dbCard.card_sets && ygoSets.length > 0) {
+                dbCard.card_sets.forEach(cs => {
+                    const prefix = cs.set_code.split('-')[0];
+                    const setInfo = ygoSets.find(s => s.set_code === prefix);
+                    if (setInfo && setInfo.tcg_date) {
+                        if (setInfo.tcg_date < earliestDate) {
+                            earliestDate = setInfo.tcg_date;
+                            earliestSet = cs.set_name;
+                        }
+                    }
+                });
+            }
+            
+            if (earliestDate !== "9999-99-99") {
+                firstSetInfo = `${earliestSet} (${earliestDate})`;
+            } else if (officialFirstDate) {
+                firstSetInfo = `First Release (${officialFirstDate})`;
+            }
+        }
+
+        if (modalProduct) modalProduct.textContent = mySetInfo;
+        if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown Code";
+        if (modalFirstRelease) modalFirstRelease.textContent = firstSetInfo;
 
         if (modal) modal.style.display = "block";
 
@@ -345,50 +394,42 @@ if (clearLocalBtn) {
         }
     });
 }
-// --- 3D Tilt Effect Logic ---
 
+// --- 3D TILT EFFECT LOGIC (INTENSIFIED) ---
 const tiltImage = document.getElementById("modalImage");
 const tiltContainer = document.querySelector(".modal-image-container");
 
 if (tiltContainer && tiltImage) {
     let isDragging = false;
 
-    // Start tilting on mouse down
     tiltContainer.addEventListener('mousedown', (e) => {
         isDragging = true;
-        // Prevent default dragging behavior of the image element
         e.preventDefault(); 
     });
 
-    // Reset when mouse is released
     window.addEventListener('mouseup', () => {
         isDragging = false;
         tiltImage.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-        tiltImage.style.transition = `transform 0.5s ease-out`; // Smooth snap back
+        tiltImage.style.transition = `transform 0.5s ease-out`;
     });
 
-    // Calculate rotation while moving
     tiltContainer.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
 
-        // Remove the transition while dragging for instant response
         tiltImage.style.transition = 'none';
 
-        // Get the position and dimensions of the image container
         const rect = tiltContainer.getBoundingClientRect();
         
-        // Calculate mouse position relative to the center of the container (-1 to 1)
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
 
-        // Multiply by intensity factor (e.g., 30 degrees max tilt)
-        const rotateY = x * 40; 
-        const rotateX = -(y * 40); // Negative because moving down rotates X positively
+        // THE FIX: Cranked intensity from 40 to 75 and increased depth scale
+        const rotateY = x * 75; 
+        const rotateX = -(y * 75); 
 
-        tiltImage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+        tiltImage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`;
     });
 
-    // Reset if mouse leaves the container entirely while dragging
     tiltContainer.addEventListener('mouseleave', () => {
          if(isDragging) {
              isDragging = false;
@@ -397,4 +438,6 @@ if (tiltContainer && tiltImage) {
          }
     });
 }
+
+// Boot up
 init();
