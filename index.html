@@ -83,23 +83,23 @@
     </main>
 
     <div id="cardModal" class="modal" style="display:none; position:fixed; z-index:100; left:0; top:0; width:100%; height:100%; overflow:auto; background-color:rgba(0,0,0,0.8);">
-        <div class="modal-content" style="background-color: var(--surface, #1e1e1e); margin: 5% auto; padding: 20px; border: 1px solid #444; width: 85%; max-width: 900px; position: relative; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
-            <span class="close-btn" style="position:absolute; right:20px; top:15px; font-size:28px; font-weight:bold; cursor:pointer; color: #aaa;">&times;</span>
+        <div class="modal-content" style="background-color: var(--surface, #1e1e1e); margin: 5% auto; padding: 30px; border: 1px solid #444; width: 90%; max-width: 1100px; position: relative; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <span class="close-btn" style="position:absolute; right:20px; top:15px; font-size:32px; font-weight:bold; cursor:pointer; color: #aaa; z-index: 10;">&times;</span>
             
-            <div class="modal-body" style="display: flex; gap: 30px; margin-top: 10px; flex-wrap: wrap;">
-                <div class="modal-image-container" style="flex: 0 0 300px;">
+            <div class="modal-body" style="display: flex; gap: 40px; margin-top: 10px; flex-wrap: wrap;">
+                <div class="modal-image-container" style="flex: 0 0 340px; padding: 15px;">
                     <img id="modalImage" src="" alt="Card Image" style="width: 100%; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
                 </div>
                 
                 <div class="modal-info" style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
-                    <div class="modal-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 15px;">
+                    <div class="modal-header-row" style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 15px; padding-right: 40px;">
                         <div>
                             <h2 id="modalName" style="margin: 0 0 5px 0; font-size: 2em; color: white;">Card Name</h2>
                             <p style="margin: 0; color: #ddd; font-size: 1.1em;">
-                                <strong>[ <span id="modalAttribute"></span> <span id="modalRace"></span> / <span id="modalType"></span> ]<span id="modalLevel"></span></strong>
+                                <strong>[ <span id="modalTyping"></span> ]<span id="modalLevel"></span></strong>
                             </p>
                         </div>
-                        <span class="modal-price-badge" id="modalPrice" style="font-size: 1.4em; font-weight: bold; color: #4caf50; background: #1a1a1a; padding: 8px 18px; border-radius: 20px; border: 1px solid #4caf50; margin-left: 15px;">$0.00</span>
+                        <span class="modal-price-badge" id="modalPrice" style="font-size: 1.4em; font-weight: bold; color: #4caf50; background: #1a1a1a; padding: 8px 18px; border-radius: 20px; border: 1px solid #4caf50; margin-left: 15px; white-space: nowrap;">$0.00</span>
                     </div>
 
                     <div class="banlist-container" style="margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
