@@ -135,7 +135,7 @@ input, select {
     --y: 0px;
 }
 
-/* Ultra Rare: Smooth moving rainbow sweep */
+/* Ultra Rare: Açıkça belirtilmiş pozisyonlar sayesinde linter hata vermez */
 .foil-ultra {
     background-image: repeating-linear-gradient(
         115deg,
@@ -149,7 +149,7 @@ input, select {
     background-position: calc(50% + var(--x) * -2) calc(50% + var(--y) * -2);
 }
 
-/* Secret Rare: Tarayıcının çökmesini engelleyen explicit (açık) yazılmış versiyon */
+/* Secret Rare: Tüm katmanlar ayrıştırıldı, red cross çözüldü */
 .foil-secret {
     background-image: 
         /* 1. Gökkuşağı yansıması */
@@ -163,7 +163,7 @@ input, select {
         /* 2. Yatay tarama çizgileri */
         linear-gradient(transparent, rgba(0, 0, 0, 0.5), transparent),
         /* 3. Nokta matrisi */
-        radial-gradient(transparent, rgba(0, 0, 0, 0.3)),
+        radial-gradient(circle, transparent, rgba(0, 0, 0, 0.3)),
         /* 4. Yatay kazınmış ızgara */
         linear-gradient(transparent 40%, rgba(255, 255, 255, 0.8) 49%, rgba(255, 255, 255, 0.8) 51%, transparent 60%),
         /* 5. Dikey kazınmış ızgara (1) */
@@ -179,14 +179,15 @@ input, select {
         7.6em 100%,
         7.5em 100%;
 
-    /* Farklı hızlarda hareket ederek gerçek 3 boyut hissi yaratan koordinatlar */
+    /* Syntax hatası engellemek için tüm '0'lar '0px' yapıldı */
     background-position: 
         calc(50% + var(--x) * -2) calc(50% + var(--y) * -2),
-        0 0,
-        0 0,
-        0 calc(var(--y) * -0.2),
-        calc(var(--x) * -0.2) 0,
-        calc(var(--x) * -0.4) 0;
+        0px 0px,
+        0px 0px,
+        0px calc(var(--y) * -0.2),
+        calc(var(--x) * -0.2) 0px,
+        calc(var(--x) * -0.4) 0px;
 
+    /* 6 katman için 6 adet blend-mode tanımlandı */
     background-blend-mode: color-dodge, normal, normal, normal, normal, normal;
 }
