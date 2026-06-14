@@ -259,7 +259,7 @@ function applyCardMask(dbCard) {
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (SADECE BURASI DEĞİŞTİRİLDİ)
+    // 3. Level/Rank Stars (SADECE BURASI DEĞİŞTİRİLDİ: Sağa alındı ve 23.2 yapıldı)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
@@ -268,9 +268,8 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Konum: 319'dan 306'ya çekildi (Sola kaydırıldı). Xyz için simetrik olarak 48 yapıldı.
-            // Aralık: 23.8'den 23.4'e düşürüldü (Minnacık daraltıldı).
-            let offsetX = isXyz ? (48 + (i * 23.4)) : (306 - (i * 23.4));
+            // Yıldızlar sağa kaydırıldı (312 / 42) ve aralık 23.2 yapıldı.
+            let offsetX = isXyz ? (42 + (i * 23.2)) : (312 - (i * 23.2));
             let xPercent = (offsetX / 354) * 100;
             maskPositions.push(`${xPercent}% 12.75%`);
         }
