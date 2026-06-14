@@ -279,3 +279,22 @@ hr { border: 0; height: 1px; background: #444; margin: 15px 0; }
     .modal-image-container img { width: 100%; max-width: 280px; }
     .controls-bar { flex-direction: column; }
 }
+
+/* 3D Tilt Effect for Modal Image */
+.modal-image-container {
+    perspective: 1000px; /* This creates the 3D depth */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#modalImage {
+    transition: transform 0.1s ease-out; /* Smooth follow for the mouse */
+    transform-style: preserve-3d;
+    will-change: transform;
+    cursor: grab;
+}
+
+#modalImage:active {
+    cursor: grabbing;
+}
