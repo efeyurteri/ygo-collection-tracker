@@ -301,50 +301,55 @@ hr { border: 0; height: 1px; background: #444; margin: 15px 0; }
 
 /* --- FOIL EFFECT STYLES --- */
 
+/* --- THE AUTHENTIC FOIL STYLES --- */
+
 .foil-layer {
-    /* We make the gradients massive so we can pan them around smoothly */
     background-size: 200% 200%; 
 }
 
-/* Basic Gloss: A simple moving white sheen */
-.foil-gloss {
-    background: linear-gradient(105deg, 
-        transparent 20%, 
-        rgba(255, 255, 255, 0.4) 25%, 
-        rgba(255, 255, 255, 0.1) 30%, 
-        transparent 35%
-    );
-    mix-blend-mode: color-dodge;
-}
-
-/* Ultra Rare: A soft moving rainbow */
+/* Ultra Rare: A massive, smooth, vibrant rainbow sweep */
 .foil-ultra {
-    background: linear-gradient(105deg, 
-        transparent 15%, 
-        rgba(255, 215, 0, 0.35) 20%, 
-        rgba(255, 105, 180, 0.35) 25%, 
-        rgba(0, 255, 255, 0.35) 30%, 
-        transparent 35%
+    background-image: linear-gradient(
+        115deg,
+        transparent 0%,
+        rgba(255, 0, 0, 0.4) 15%,
+        rgba(255, 200, 0, 0.4) 30%,
+        rgba(0, 255, 0, 0.4) 45%,
+        rgba(0, 255, 255, 0.4) 60%,
+        rgba(0, 0, 255, 0.4) 75%,
+        rgba(255, 0, 255, 0.4) 90%,
+        transparent 100%
     );
-    mix-blend-mode: color-dodge;
-}
-
-/* Secret Rare: Diagonal prismatic lines + rainbow sheen */
-.foil-secret {
-    background: 
-        repeating-linear-gradient(45deg, 
-            rgba(255, 255, 255, 0) 0%, 
-            rgba(255, 255, 255, 0.1) 2%, 
-            rgba(255, 0, 255, 0.2) 4%, 
-            rgba(0, 255, 255, 0.2) 6%, 
-            rgba(255, 255, 255, 0) 8%
-        ),
-        linear-gradient(105deg, 
-            transparent 15%, 
-            rgba(255, 255, 255, 0.5) 25%, 
-            transparent 35%
-        );
     background-size: 300% 300%;
     mix-blend-mode: color-dodge;
 }
 
+/* Secret Rare: Mimics Effect Veiler (Sharp slashes + underlying rainbow parallax) */
+.foil-secret {
+    background-image: 
+        /* The distinct diagonal TCG Secret Rare lines */
+        repeating-linear-gradient(
+            -45deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0) 3%,
+            rgba(255, 255, 255, 0.4) 3.5%,
+            rgba(255, 255, 255, 0.5) 4%,
+            rgba(255, 255, 255, 0.4) 4.5%,
+            rgba(255, 255, 255, 0) 5%,
+            rgba(255, 255, 255, 0) 8%
+        ),
+        /* The heavy rainbow spectrum behind the lines */
+        linear-gradient(
+            115deg,
+            transparent 10%,
+            rgba(255, 0, 0, 0.5) 20%,
+            rgba(255, 255, 0, 0.5) 30%,
+            rgba(0, 255, 0, 0.5) 40%,
+            rgba(0, 255, 255, 0.5) 50%,
+            rgba(0, 0, 255, 0.5) 60%,
+            rgba(255, 0, 255, 0.5) 70%,
+            transparent 80%
+        );
+    background-size: 200% 200%, 300% 300%;
+    mix-blend-mode: color-dodge;
+}
