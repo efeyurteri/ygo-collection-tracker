@@ -269,7 +269,7 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Xyz logic aligns stars differently than regular levels
+            // Percentage math to hit empty spaces perfectly
             let offsetX = isXyz ? (43 + (i * 27)) : (289 - (i * 27));
             let xPercent = (offsetX / 332) * 100;
             maskPositions.push(`${xPercent}% 12.75%`);
@@ -279,16 +279,17 @@ function applyCardMask(dbCard) {
     const maskImageStr = maskImages.join(', ');
     const maskSizeStr = maskSizes.join(', ');
     const maskPositionStr = maskPositions.join(', ');
+    const maskRepeatStr = maskImages.map(() => 'no-repeat').join(', ');
 
     foilLayer.style.webkitMaskImage = maskImageStr;
     foilLayer.style.webkitMaskSize = maskSizeStr;
     foilLayer.style.webkitMaskPosition = maskPositionStr;
-    foilLayer.style.webkitMaskRepeat = 'no-repeat';
+    foilLayer.style.webkitMaskRepeat = maskRepeatStr;
     
     foilLayer.style.maskImage = maskImageStr;
     foilLayer.style.maskSize = maskSizeStr;
     foilLayer.style.maskPosition = maskPositionStr;
-    foilLayer.style.maskRepeat = 'no-repeat';
+    foilLayer.style.maskRepeat = maskRepeatStr;
 }
 
 // --------------------------------------------------------
@@ -301,8 +302,20 @@ function openModal(item, dbCard) {
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
         
-        // Inject pixel-perfect coordinate masks based on card data
+        // Inject pixel-perfect coordinate masks
         applyCardMask(dbCard);
+        
+        const foilLayer = document.getElementById("foilLayer");
+        if (foilLayer && foilSelect) {
+            // Apply the actual class immediately when opening the modal
+            if (foilSelect.value !== 'none') {
+                foilLayer.className = `foil-layer foil-${foilSelect.value}`;
+                foilLayer.style.opacity = '0.2'; // Start slightly visible
+            } else {
+                foilLayer.className = `foil-layer`;
+                foilLayer.style.opacity = '0';
+            }
+        }
         
         if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
         
@@ -483,9 +496,25 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
+// Live update foil when changing dropdown
+if (foilSelect) {
+    foilSelect.addEventListener('change', () => {
+        const foilLayer = document.getElementById("foilLayer");
+        if (modal && modal.style.display === "block" && foilLayer) {
+            if (foilSelect.value !== 'none') {
+                foilLayer.className = `foil-layer foil-${foilSelect.value}`;
+                foilLayer.style.opacity = '0.3';
+            } else {
+                foilLayer.className = `foil-layer`;
+                foilLayer.style.opacity = '0';
+            }
+        }
+    });
+}
+
 
 // --------------------------------------------------------
-// THE FOIL & TILT ENGINE (Dynamic Parallax Variables)
+// THE FOIL & TILT ENGINE (Explicit Variable Injection)
 // --------------------------------------------------------
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
@@ -504,10 +533,9 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         isDragging = false;
         tiltWrapper.style.cursor = "grab";
         tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-        tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
         if (foilSelect && foilSelect.value !== 'none') {
-            foilLayer.style.setProperty('--o', '0'); 
+            foilLayer.style.opacity = '0.2'; 
             foilLayer.style.setProperty('--x', '0px');
             foilLayer.style.setProperty('--y', '0px');
         }
@@ -516,35 +544,29 @@ if (tiltContainer && tiltWrapper && foilLayer) {
     tiltContainer.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
 
-        tiltWrapper.style.transition = 'none';
-
         const rect = tiltContainer.getBoundingClientRect();
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         
-        // Exact distances from center
         const x = e.clientX - rect.left - centerX;
         const y = e.clientY - rect.top - centerY;
 
-        // Dynamic 3D tilt
         const rotateX = (y / centerY) * -15; 
         const rotateY = (x / centerX) * 15; 
         tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
 
-        // FOIL PARALLAX INJECTION
         if (foilSelect && foilSelect.value !== 'none') {
+            // THE FIX: Assign class to ensure CSS triggers, inject opacity natively
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
             
-            // Calculate light dropoff based on distance from center
             const dxyMax = Math.hypot(centerX, centerY);
             let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
             
-            // Update CSS Variables (CSS handles the complex background blends)
-            foilLayer.style.setProperty('--o', opacityCalc);
+            foilLayer.style.opacity = opacityCalc;
             foilLayer.style.setProperty('--x', `${x * 0.5}px`);
             foilLayer.style.setProperty('--y', `${y * 0.5}px`);
         } else {
-            foilLayer.style.setProperty('--o', '0');
+            foilLayer.style.opacity = '0';
         }
     });
 
@@ -553,10 +575,9 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              isDragging = false;
              tiltWrapper.style.cursor = "grab";
              tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-             tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
              if (foilSelect && foilSelect.value !== 'none') {
-                 foilLayer.style.setProperty('--o', '0');
+                 foilLayer.style.opacity = '0.2';
                  foilLayer.style.setProperty('--x', '0px');
                  foilLayer.style.setProperty('--y', '0px');
              }
