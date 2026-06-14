@@ -129,7 +129,6 @@ input, select {
     z-index: 5;
     transition: opacity 0.3s;
     
-    /* Mix blend multiplies the light against your card art */
     mix-blend-mode: color-dodge;
     opacity: var(--o, 0);
     --x: 0px;
@@ -138,37 +137,56 @@ input, select {
 
 /* Ultra Rare: Smooth moving rainbow sweep */
 .foil-ultra {
-    background: repeating-linear-gradient(
+    background-image: repeating-linear-gradient(
         115deg,
         transparent 0%,
         rgba(255, 0, 0, 0.6) 10%, rgba(255, 255, 0, 0.6) 20%,
         rgba(0, 255, 0, 0.6) 30%, rgba(0, 255, 255, 0.6) 40%,
         rgba(0, 0, 255, 0.6) 50%, rgba(255, 0, 255, 0.6) 60%,
         transparent 70%
-    ) calc(50% + var(--x) * -2) calc(50% + var(--y) * -2) / 300% 300%;
+    );
+    background-size: 300% 300%;
+    background-position: calc(50% + var(--x) * -2) calc(50% + var(--y) * -2);
 }
 
-/* Secret Rare: Etched Grid + Dot Matrix Texture + Rainbow Parallax */
+/* Secret Rare: Tarayıcının çökmesini engelleyen explicit (açık) yazılmış versiyon */
 .foil-secret {
-    background: 
-        /* 1. The Heavy Rainbow Reflection */
+    background-image: 
+        /* 1. Gökkuşağı yansıması */
         repeating-linear-gradient(
             30deg,
             rgb(255, 120, 0), rgb(255, 120, 0), rgb(255, 255, 0),
             rgb(0, 255, 0), rgb(0, 255, 255), rgb(0, 120, 255),
             rgb(0, 255, 255), rgb(0, 255, 0), rgb(255, 255, 0),
             rgb(255, 120, 0) 30em
-        ) calc(50% + var(--x) * -2) calc(50% + var(--y) * -2) / 300% 300%,
-        
-        /* 2. The Dotted/Scanline Texture */
-        linear-gradient(transparent, rgba(0, 0, 0, 0.5), transparent) 0 0 / 100% 3px,
-        radial-gradient(transparent, rgba(0, 0, 0, 0.3)) 0 0 / 2px 2px,
-        
-        /* 3. The Grid (Etched Lines) */
-        linear-gradient(transparent 40%, rgba(255, 255, 255, 0.8) 49%, rgba(255, 255, 255, 0.8) 51%, transparent 60%) 0 calc(var(--y) * -0.2) / 100% 7.5em,
-        linear-gradient(90deg, transparent 50%, rgba(255, 255, 255, 0.8) 59%, rgba(255, 255, 255, 0.8) 61%, transparent 70%) calc(var(--x) * -0.2) 0 / 7.6em 100%,
-        linear-gradient(90deg, transparent 55%, rgba(255, 255, 255, 0.8), transparent 65%) calc(var(--x) * -0.4) 0 / 7.5em 100%;
+        ),
+        /* 2. Yatay tarama çizgileri */
+        linear-gradient(transparent, rgba(0, 0, 0, 0.5), transparent),
+        /* 3. Nokta matrisi */
+        radial-gradient(transparent, rgba(0, 0, 0, 0.3)),
+        /* 4. Yatay kazınmış ızgara */
+        linear-gradient(transparent 40%, rgba(255, 255, 255, 0.8) 49%, rgba(255, 255, 255, 0.8) 51%, transparent 60%),
+        /* 5. Dikey kazınmış ızgara (1) */
+        linear-gradient(90deg, transparent 50%, rgba(255, 255, 255, 0.8) 59%, rgba(255, 255, 255, 0.8) 61%, transparent 70%),
+        /* 6. Dikey kazınmış ızgara (2) */
+        linear-gradient(90deg, transparent 55%, rgba(255, 255, 255, 0.8), transparent 65%);
 
-    /* Blends the grid and texture directly into the rainbow, then dodges the card */
-    background-blend-mode: color-dodge, normal, normal, normal, normal;
+    background-size: 
+        300% 300%,
+        100% 3px,
+        2px 2px,
+        100% 7.5em,
+        7.6em 100%,
+        7.5em 100%;
+
+    /* Farklı hızlarda hareket ederek gerçek 3 boyut hissi yaratan koordinatlar */
+    background-position: 
+        calc(50% + var(--x) * -2) calc(50% + var(--y) * -2),
+        0 0,
+        0 0,
+        0 calc(var(--y) * -0.2),
+        calc(var(--x) * -0.2) 0,
+        calc(var(--x) * -0.4) 0;
+
+    background-blend-mode: color-dodge, normal, normal, normal, normal, normal;
 }
