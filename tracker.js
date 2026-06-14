@@ -345,5 +345,56 @@ if (clearLocalBtn) {
         }
     });
 }
+// --- 3D Tilt Effect Logic ---
 
+const tiltImage = document.getElementById("modalImage");
+const tiltContainer = document.querySelector(".modal-image-container");
+
+if (tiltContainer && tiltImage) {
+    let isDragging = false;
+
+    // Start tilting on mouse down
+    tiltContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        // Prevent default dragging behavior of the image element
+        e.preventDefault(); 
+    });
+
+    // Reset when mouse is released
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        tiltImage.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+        tiltImage.style.transition = `transform 0.5s ease-out`; // Smooth snap back
+    });
+
+    // Calculate rotation while moving
+    tiltContainer.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        // Remove the transition while dragging for instant response
+        tiltImage.style.transition = 'none';
+
+        // Get the position and dimensions of the image container
+        const rect = tiltContainer.getBoundingClientRect();
+        
+        // Calculate mouse position relative to the center of the container (-1 to 1)
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+
+        // Multiply by intensity factor (e.g., 30 degrees max tilt)
+        const rotateY = x * 40; 
+        const rotateX = -(y * 40); // Negative because moving down rotates X positively
+
+        tiltImage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+    });
+
+    // Reset if mouse leaves the container entirely while dragging
+    tiltContainer.addEventListener('mouseleave', () => {
+         if(isDragging) {
+             isDragging = false;
+             tiltImage.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+             tiltImage.style.transition = `transform 0.5s ease-out`;
+         }
+    });
+}
 init();
