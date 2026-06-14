@@ -42,7 +42,6 @@ const modalFirstRelease = document.getElementById("modalFirstRelease");
 const modalTCG = document.getElementById("modalTCG");
 const modalCM = document.getElementById("modalCM");
 
-// HTML Decoder to handle "&amp;" and other entities natively
 function decodeHTML(text) {
     if (!text) return "";
     const textArea = document.createElement('textarea');
@@ -99,7 +98,6 @@ function renderCards() {
     const sortVal = sortFilter ? sortFilter.value : 'name_asc';
 
     let displayData = fullCollection.map(item => {
-        // Safe decoding matching
         const dbCard = ygoDatabase.find(c => decodeHTML(c.name).toLowerCase() === decodeHTML(item['Card Name']).toLowerCase());
         let price = 0;
         if (dbCard && dbCard.card_prices && dbCard.card_prices[0]) {
@@ -110,7 +108,6 @@ function renderCards() {
         return { item, dbCard, price, qty };
     });
 
-    // Apply MD-Style Filters
     displayData = displayData.filter(data => {
         const cardName = decodeHTML(data.item['Card Name']).toLowerCase();
         const cardCode = (data.item['Set Code'] || '').toLowerCase();
@@ -128,18 +125,28 @@ function renderCards() {
                 matchesLvl = (cardLvl.toString() === lvlVal);
             }
         } else {
-            // If custom/unreleased card, hide it if strict filters are applied
             if (typeVal !== 'All' || attrVal !== 'All' || lvlVal !== 'All') return false; 
         }
 
         return matchesSearch && matchesType && matchesAttr && matchesLvl;
     });
 
-    // Sorting
     displayData.sort((a, b) => {
         if (sortVal === 'name_asc') return a.item['Card Name'].localeCompare(b.item['Card Name']);
         if (sortVal === 'name_desc') return b.item['Card Name'].localeCompare(a.item['Card Name']);
         if (sortVal === 'price_desc') return b.price - a.price;
+        
+        // Advanced MD Sorting Logic
+        if (sortVal === 'atk_desc') {
+            const atkA = (a.dbCard && a.dbCard.atk !== undefined) ? a.dbCard.atk : -1;
+            const atkB = (b.dbCard && b.dbCard.atk !== undefined) ? b.dbCard.atk : -1;
+            return atkB - atkA;
+        }
+        if (sortVal === 'def_desc') {
+            const defA = (a.dbCard && a.dbCard.def !== undefined) ? a.dbCard.def : -1;
+            const defB = (b.dbCard && b.dbCard.def !== undefined) ? b.dbCard.def : -1;
+            return defB - defA;
+        }
         return 0;
     });
 
@@ -162,10 +169,13 @@ function renderCards() {
         const imgUrl = dbCard ? dbCard.card_images[0].image_url_small : `images/${item['Set Code']}.jpg`;
 
         cardDiv.innerHTML = `
-            <img src="${imgUrl}" alt="${item['Card Name']}" onerror="this.src='https://images.ygoprodeck.com/images/cards/back_high.jpg'" style="width:100%; border-radius:4px; display:block;">
+            <div style="position: relative; display: inline-block; width: 100%;">
+                <img src="${imgUrl}" alt="${item['Card Name']}" onerror="this.src='https://images.ygoprodeck.com/images/cards/back_high.jpg'" style="width:100%; border-radius:4px; display:block;">
+                <div style="position: absolute; top: -8px; right: -8px; background: #4caf50; color: #1a1a1a; width: 26px; height: 26px; border-radius: 50%; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.9em; box-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 2px solid #1a1a1a;">${qty}</div>
+            </div>
             <div style="margin-top: 10px; text-align: center;">
                 <h3 style="font-size:0.9em; margin:0 0 5px 0; color: #fff;">${item['Card Name']}</h3>
-                <p style="font-size:0.8em; color:#aaa; margin:0;">${item['Set Code']} (x${qty})</p>
+                <p style="font-size:0.8em; color:#aaa; margin:0;">${item['Set Code']}</p>
             </div>
         `;
 
@@ -188,7 +198,6 @@ function getBanlistStatus(status) {
 // Blended Modal Logic
 function openModal(item, dbCard) {
     try {
-        // Image & Core Data
         if (modalImage) {
             modalImage.src = dbCard ? dbCard.card_images[0].image_url : `images/${item['Set Code']}.jpg`;
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
@@ -199,24 +208,27 @@ function openModal(item, dbCard) {
         if (modalRace) modalRace.textContent = dbCard ? (dbCard.race || "Unknown") : "N/A";
         if (modalType) modalType.textContent = dbCard ? (dbCard.type || "Custom") : "Custom / Unreleased";
         
-        // Level/Rank/Link calculation
+        // Exact Level / Rank / Link logic
         if (modalLevel) {
             let lvlStr = "";
             if (dbCard) {
-                if (dbCard.level) lvlStr = ` | Level/Rank ${dbCard.level}`;
-                else if (dbCard.linkval) lvlStr = ` | Link-${dbCard.linkval}`;
+                if (dbCard.type.includes("XYZ")) {
+                    lvlStr = ` | Rank ${dbCard.level}`;
+                } else if (dbCard.type.includes("Link")) {
+                    lvlStr = ` | Link-${dbCard.linkval}`;
+                } else if (dbCard.level !== undefined) {
+                    lvlStr = ` | Level ${dbCard.level}`;
+                }
             }
             modalLevel.textContent = lvlStr;
         }
 
         if (modalDesc) modalDesc.textContent = dbCard ? decodeHTML(dbCard.desc || "No description available.") : "Card details not currently available in the official YGOPRODeck database.";
 
-        // Prices
         if (modalPrice) modalPrice.textContent = (dbCard && dbCard.card_prices && dbCard.card_prices[0]) ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
         if (modalTCG) modalTCG.textContent = (dbCard && dbCard.card_prices) ? `$${dbCard.card_prices[0].tcgplayer_price}` : "N/A";
         if (modalCM) modalCM.textContent = (dbCard && dbCard.card_prices) ? `€${dbCard.card_prices[0].cardmarket_price}` : "N/A";
 
-        // Banlist Logic (with specific overrides)
         const banlist = dbCard ? (dbCard.banlist_info || {}) : {};
         if (banTcg) banTcg.textContent = `TCG: ${getBanlistStatus(banlist.ban_tcg)}`;
         if (banOcg) banOcg.textContent = `OCG: ${getBanlistStatus(banlist.ban_ocg)}`;
@@ -228,7 +240,6 @@ function openModal(item, dbCard) {
         }
         if (banMd) banMd.textContent = `MD: ${mdStatus}`;
 
-        // ATK/DEF Handling
         const isSpellTrap = dbCard ? (dbCard.type.includes("Spell") || dbCard.type.includes("Trap")) : false;
         
         if (isSpellTrap || !dbCard) {
@@ -249,29 +260,14 @@ function openModal(item, dbCard) {
             }
         }
 
-        // Release Date Cross-Referencing
-        let mySetInfo = item['Product'] || "Unknown Product";
-        let firstSetInfo = "N/A";
-
-        if (dbCard && dbCard.card_sets && dbCard.card_sets.length > 0) {
-            // Find Earliest Date for First Released
-            let earliestSet = dbCard.card_sets.reduce((prev, curr) => {
-                if (!prev.set_date) return curr;
-                if (!curr.set_date) return prev;
-                return (new Date(prev.set_date) < new Date(curr.set_date)) ? prev : curr;
-            });
-            firstSetInfo = `${earliestSet.set_name} (${earliestSet.set_date || "Unknown Date"})`;
-
-            // Find Exact Printing Date
-            let mySet = dbCard.card_sets.find(s => s.set_code === item['Set Code']);
-            if (mySet) {
-                mySetInfo = `${mySet.set_name} (${mySet.set_date || "Unknown Date"})`;
-            }
+        // Reliable Release Dates (Reverted to Turn 1 Logic)
+        if (modalProduct) modalProduct.textContent = item['Product'] || "Unknown";
+        if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown";
+        if (modalFirstRelease) {
+            modalFirstRelease.textContent = (dbCard && dbCard.misc_info && dbCard.misc_info[0] && dbCard.misc_info[0].tcg_date) 
+                ? dbCard.misc_info[0].tcg_date 
+                : "N/A";
         }
-
-        if (modalProduct) modalProduct.textContent = mySetInfo;
-        if (modalCode) modalCode.textContent = item['Set Code'] || "Unknown Code";
-        if (modalFirstRelease) modalFirstRelease.textContent = firstSetInfo;
 
         if (modal) modal.style.display = "block";
 
@@ -280,11 +276,9 @@ function openModal(item, dbCard) {
     }
 }
 
-// Close Modal
 if (closeBtn) closeBtn.addEventListener('click', () => { if (modal) modal.style.display = "none"; });
 window.addEventListener('click', (e) => { if (e.target == modal) modal.style.display = "none"; });
 
-// Form Submit
 if (form) {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -323,7 +317,6 @@ if (form) {
     });
 }
 
-// Listeners
 if (searchInput) searchInput.addEventListener('input', renderCards);
 if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
@@ -353,5 +346,4 @@ if (clearLocalBtn) {
     });
 }
 
-// Boot up
 init();
