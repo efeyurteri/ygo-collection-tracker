@@ -268,10 +268,10 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Yıldızlar 1 yıldız (~23px) SAĞA kaydırıldı.
-            // Aralarındaki boşluk çok minnak daraltıldı (24.2 yerine 23.8 yapıldı).
-            let offsetX = isXyz ? (59 + (i * 23.8)) : (319 - (i * 23.8));
-            let xPercent = (offsetX / 332) * 100;
+            // Konum: 319'dan 306'ya çekildi (Sola kaydırıldı). Xyz için simetrik olarak 48 yapıldı.
+            // Aralık: 23.8'den 23.4'e düşürüldü (Minnacık daraltıldı).
+            let offsetX = isXyz ? (48 + (i * 23.4)) : (306 - (i * 23.4));
+            let xPercent = (offsetX / 354) * 100;
             maskPositions.push(`${xPercent}% 12.75%`);
         }
     }
@@ -564,8 +564,8 @@ if (tiltContainer && tiltWrapper && foilLayer) {
             let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
             
             foilLayer.style.setProperty('--o', opacityCalc);
-            foilLayer.style.setProperty('--x', `${x * 0.5}px`);
-            foilLayer.style.setProperty('--y', `${y * 0.5}px`);
+            foilLayer.style.setProperty('--x', `${x * 1.25}px`);
+            foilLayer.style.setProperty('--y', `${y * 1.25}px`);
         } else {
             foilLayer.style.setProperty('--o', '0');
         }
