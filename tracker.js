@@ -234,44 +234,44 @@ function getBanlistStatus(status) {
 }
 
 // --------------------------------------------------------
-// DYNAMIC FOIL MASK GENERATOR (Exact YGOPRODeck Coordinates)
+// DYNAMIC FOIL MASK GENERATOR 
 // --------------------------------------------------------
 function applyCardMask(dbCard) {
     const foilLayer = document.getElementById("foilLayer");
     const tiltWrapper = document.getElementById("tiltWrapper");
     if (!foilLayer || !tiltWrapper) return;
     
-    // Lock the wrapper to standard YGO aspect ratio for exact math
+    // Maske matematiği için tam oran kilitlenir
     tiltWrapper.style.aspectRatio = "354 / 516";
     
     let maskImages = [];
     let maskSizes = [];
     let maskPositions = [];
 
-    // 1. The Art Box (Exact Layout)
-    maskImages.push('linear-gradient(rgba(0,0,0,1), rgba(0,0,0,1))');
+    // 1. Resim Kutusu
+    maskImages.push('linear-gradient(#000, #000)');
     maskSizes.push('76.27% 52.32%'); 
     maskPositions.push('50% 37.8%');
 
-    // 2. The Attribute Circle (Top Right)
+    // 2. Özellik (Attribute) Sembolü
     if (dbCard && (dbCard.attribute || dbCard.type.includes("Spell") || dbCard.type.includes("Trap"))) {
-        maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
+        maskImages.push('radial-gradient(ellipse, #000 68%, transparent 70%)');
         maskSizes.push('9.03% 6.2%');
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (THE MATHEMATICAL FIX)
+    // 3. Yıldızlar (Boşluk hesaplaması 23.2px'e daraltıldı)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
         
         for (let i = 0; i < numStars; i++) {
-            maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
+            maskImages.push('radial-gradient(ellipse, #000 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Xyz alignment starts at 43px. Normal starts at 289px.
-            // Spacing is EXACTLY 22.5 pixels between stars relative to a 354 width card.
-            let offsetX = isXyz ? (43 + (i * 22.5)) : (289 - (i * 22.5));
+            // Xyz (siyah) yıldızlar soldan başlar, diğerleri sağdan. 
+            // 23.2 boşluk oranı boşlukların tam oturmasını sağlar.
+            let offsetX = isXyz ? (43 + (i * 23.2)) : (296 - (i * 23.2));
             let xPercent = (offsetX / 354) * 100;
             
             maskPositions.push(`${xPercent}% 12.75%`);
@@ -304,15 +304,13 @@ function openModal(item, dbCard) {
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
         
-        // Inject pixel-perfect coordinate masks
+        // Dinamik maskeyi bas
         applyCardMask(dbCard);
         
-        // Handle Foil Layer Activation
         const foilLayer = document.getElementById("foilLayer");
         if (foilLayer && foilSelect) {
             if (foilSelect.value !== 'none') {
                 foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-                // Set base opacity so it rests beautifully
                 foilLayer.style.setProperty('--o', '0.4'); 
             } else {
                 foilLayer.className = `foil-layer`;
@@ -499,14 +497,14 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-// Live update foil when changing dropdown
+// Folyoyu seçildiği an aktifleştiren kod
 if (foilSelect) {
     foilSelect.addEventListener('change', () => {
         const foilLayer = document.getElementById("foilLayer");
         if (modal && modal.style.display === "block" && foilLayer) {
             if (foilSelect.value !== 'none') {
                 foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-                foilLayer.style.setProperty('--o', '0.4'); // Resting brightness
+                foilLayer.style.setProperty('--o', '0.4'); 
             } else {
                 foilLayer.className = `foil-layer`;
                 foilLayer.style.setProperty('--o', '0');
@@ -517,7 +515,7 @@ if (foilSelect) {
 
 
 // --------------------------------------------------------
-// THE FOIL & TILT ENGINE (Dynamic Parallax Variables)
+// THE FOIL & TILT ENGINE
 // --------------------------------------------------------
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
@@ -564,14 +562,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
             
-            // Calculates intense center-light dropoff for realism
             const dxyMax = Math.hypot(centerX, centerY);
             let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
             
-            // Inject strictly CSS variables so background blend engine does not crash
             foilLayer.style.setProperty('--o', opacityCalc);
-            
-            // The 1.25 multiplier ensures massive, intense movement sweeps across the card
             foilLayer.style.setProperty('--x', `${x * 1.25}px`);
             foilLayer.style.setProperty('--y', `${y * 1.25}px`);
         } else {
