@@ -6,7 +6,6 @@ let ygoDatabase = [];
 let ygoSets = [];
 let processedCollection = []; 
 
-// DOM Elements
 const grid = document.getElementById('cardGrid');
 const form = document.getElementById('addCardForm');
 const searchInput = document.getElementById('searchInput');
@@ -21,7 +20,6 @@ const totalValueDisplay = document.getElementById('totalValue');
 const cardCountDisplay = document.getElementById('cardCount');
 const addStatus = document.getElementById('addStatus');
 
-// Modal Elements
 const modal = document.getElementById("cardModal");
 const closeBtn = document.querySelector(".close-btn");
 const modalImage = document.getElementById("modalImage");
@@ -93,7 +91,6 @@ function getCollection() {
 
 function buildProcessedCollection() {
     const fullCollection = getCollection();
-    
     const dbMap = new Map();
     ygoDatabase.forEach(c => {
         dbMap.set(decodeHTML(c.name).toLowerCase(), c);
@@ -141,7 +138,6 @@ function buildProcessedCollection() {
 function renderCards() {
     if (!grid) return;
     grid.innerHTML = '';
-    
     let totalValue = 0;
     let totalCards = 0;
 
@@ -152,7 +148,6 @@ function renderCards() {
 
     let displayData = processedCollection.filter(data => {
         const matchesSearch = data.searchString.includes(searchTerm);
-
         let matchesType = true;
         let matchesAttr = true;
 
@@ -162,7 +157,6 @@ function renderCards() {
         } else {
             if (typeVal !== 'All' || attrVal !== 'All') return false; 
         }
-
         return matchesSearch && matchesType && matchesAttr;
     });
 
@@ -233,41 +227,46 @@ function getBanlistStatus(status) {
     return status;
 }
 
-// --- DYNAMIC FOIL MASK GENERATOR ---
+// --- DYNAMIC FOIL MASK GENERATOR (Exact YGOPRODeck Coordinates) ---
 function applyCardMask(dbCard) {
     const foilLayer = document.getElementById("foilLayer");
-    if (!foilLayer) return;
+    const tiltWrapper = document.getElementById("tiltWrapper");
+    if (!foilLayer || !tiltWrapper) return;
+    
+    // Lock the wrapper to standard YGO aspect ratio (354x516) for exact math
+    tiltWrapper.style.aspectRatio = "354 / 516";
     
     let maskImages = [];
     let maskSizes = [];
     let maskPositions = [];
 
-    // 1. The Art Box (Always foiled)
+    // 1. The Art Box (Exact layout: left 42px, top 93px, width 270px, height 270px)
     maskImages.push('linear-gradient(black, black)');
-    maskSizes.push('75% 52.5%'); 
-    maskPositions.push('center 18.5%');
+    maskSizes.push('76.27% 52.32%'); 
+    maskPositions.push('50% 37.8%');
 
-    // 2. The Attribute Circle (Top Right)
-    maskImages.push('radial-gradient(ellipse, black 50%, transparent 55%)');
-    maskSizes.push('9.5% 6.5%');
-    maskPositions.push('88.5% 8.6%');
+    // 2. The Attribute Circle (Exact layout: left 296px, top 24px, 32x32)
+    // Only apply if it's a monster or spell/trap with an attribute
+    if (dbCard && (dbCard.attribute || dbCard.type.includes("Spell") || dbCard.type.includes("Trap"))) {
+        maskImages.push('radial-gradient(ellipse, black 68%, transparent 70%)');
+        maskSizes.push('9.03% 6.2%');
+        maskPositions.push('91.92% 4.95%');
+    }
 
-    // 3. Level/Rank Stars (Dynamic Calculation)
+    // 3. Level/Rank Stars (Exact layout: y=63px, 22x22 stars spaced by 27px)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
         
         for (let i = 0; i < numStars; i++) {
-            maskImages.push('radial-gradient(ellipse, black 50%, transparent 55%)');
-            maskSizes.push('6.1% 4.2%');
+            maskImages.push('radial-gradient(ellipse, black 68%, transparent 70%)');
+            maskSizes.push('6.21% 4.26%');
             
-            if (isXyz) {
-                // Rank stars align to the left, stacking right
-                maskPositions.push(`calc(14.5% + ${i * 6.5}%) 14.6%`);
-            } else {
-                // Level stars align to the right, stacking left
-                maskPositions.push(`calc(85.5% - ${i * 6.5}%) 14.6%`);
-            }
+            // XYZ starts at left 43px. Others start right 289px.
+            let offsetX = isXyz ? (43 + (i * 27)) : (289 - (i * 27));
+            let xPercent = (offsetX / 332) * 100;
+            
+            maskPositions.push(`${xPercent}% 12.75%`);
         }
     }
 
@@ -293,7 +292,7 @@ function openModal(item, dbCard) {
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
         
-        // Apply the dynamic stencil for the foil
+        // Inject pixel-perfect coordinate masks
         applyCardMask(dbCard);
         
         if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
@@ -472,8 +471,7 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-
-// --- THE NEW AUTHENTIC FOIL MATH ---
+// --- THE NEW AUTHENTIC FOIL MATH (Adapted from ygo-ocg-secret-rare) ---
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
 const foilLayer = document.getElementById("foilLayer");
@@ -493,12 +491,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
         tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
-        if (foilSelect && foilSelect.value === 'secret') {
-            foilLayer.style.opacity = '0.4';
-            foilLayer.style.backgroundPosition = `0px 0px, 50% 50%`; 
-        } else if (foilSelect && foilSelect.value !== 'none') {
-            foilLayer.style.opacity = '0.4';
-            foilLayer.style.backgroundPosition = `50% 50%`; 
+        if (foilSelect && foilSelect.value !== 'none') {
+            foilLayer.style.setProperty('--o', '0.1'); 
+            foilLayer.style.setProperty('--x', '0px');
+            foilLayer.style.setProperty('--y', '0px');
         }
     });
 
@@ -508,32 +504,33 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transition = 'none';
 
         const rect = tiltContainer.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
         
-        const x = (e.clientX - rect.left) / rect.width - 0.5;
-        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        // Exact distances from center
+        const x = e.clientX - rect.left - centerX;
+        const y = e.clientY - rect.top - centerY;
 
-        const rotateY = x * 75; 
-        const rotateX = -(y * 75); 
-        tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`;
+        // Dynamic 3D tilt
+        const rotateX = (y / centerY) * -15; 
+        const rotateY = (x / centerX) * 15; 
+        tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
 
         // FOIL PARALLAX CALCULATION
         if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-            foilLayer.style.opacity = '1';
             
-            // Map the tilt axis to an aggressive gradient shift
-            const bgX = (x + 0.5) * 150 - 25; 
-            const bgY = (y + 0.5) * 150 - 25; 
-
-            if (foilSelect.value === 'secret') {
-                // Parallax Layering: The SVG dots stay perfectly locked to 0px 0px.
-                // The rainbow gradient sweeps massively behind it.
-                foilLayer.style.backgroundPosition = `0px 0px, ${100 - bgX}% ${100 - bgY}%`;
-            } else {
-                foilLayer.style.backgroundPosition = `${100 - bgX}% ${100 - bgY}%`;
-            }
+            // Calculate opacity based on distance from center (Math.hypot method)
+            const dxyMax = Math.hypot(centerX, centerY);
+            let opacityCalc = 1.825 - (Math.hypot(x, y) / dxyMax);
+            if (opacityCalc > 1) opacityCalc = 1;
+            if (opacityCalc < 0) opacityCalc = 0;
+            
+            foilLayer.style.setProperty('--o', opacityCalc);
+            foilLayer.style.setProperty('--x', `${x * 1.25}px`);
+            foilLayer.style.setProperty('--y', `${y * 1.25}px`);
         } else {
-            foilLayer.style.opacity = '0';
+            foilLayer.style.setProperty('--o', '0');
         }
     });
 
@@ -544,12 +541,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
              tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
-             if (foilSelect && foilSelect.value === 'secret') {
-                 foilLayer.style.opacity = '0.4';
-                 foilLayer.style.backgroundPosition = `0px 0px, 50% 50%`;
-             } else if (foilSelect && foilSelect.value !== 'none') {
-                 foilLayer.style.opacity = '0.4';
-                 foilLayer.style.backgroundPosition = `50% 50%`;
+             if (foilSelect && foilSelect.value !== 'none') {
+                 foilLayer.style.setProperty('--o', '0.1');
+                 foilLayer.style.setProperty('--x', '0px');
+                 foilLayer.style.setProperty('--y', '0px');
              }
          }
     });
