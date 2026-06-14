@@ -259,7 +259,7 @@ function applyCardMask(dbCard) {
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (SON DÜZELTME: Daha sağda ve aralık genişletildi)
+    // 3. Level/Rank Stars
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
@@ -268,9 +268,9 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Başlangıç: 310'dan 314'e çıkarılarak net sağa alındı.
-            // Aralık: 23.6'dan 23.9'a çıkarılarak esnetildi.
-            let offsetX = isXyz ? (56 + (i * 23.9)) : (314 - (i * 23.9));
+            // Başlangıç: 316 (Xyz için simetrik olarak 38)
+            // Aralık: 24.0 yapıldı.
+            let offsetX = isXyz ? (38 + (i * 24.0)) : (316 - (i * 24.0));
             let xPercent = (offsetX / 354) * 100;
             maskPositions.push(`${xPercent}% 12.75%`);
         }
