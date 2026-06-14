@@ -3,7 +3,8 @@ const CSV_FILE = 'YuGiOh_Collection_Tracker.csv';
 let baseCollection = [];
 let localAdditions = JSON.parse(localStorage.getItem('ygo_local_additions')) || [];
 let ygoDatabase = [];
-let ygoSets = []; // NEW: Secondary database specifically for set release dates
+let ygoSets = [];
+let processedCollection = []; // NEW: Pre-calculated array for instant search
 
 // DOM Elements
 const grid = document.getElementById('cardGrid');
@@ -28,9 +29,7 @@ const modalPrice = document.getElementById("modalPrice");
 const banTcg = document.getElementById("banTcg");
 const banOcg = document.getElementById("banOcg");
 const banMd = document.getElementById("banMd");
-const modalAttribute = document.getElementById("modalAttribute");
-const modalRace = document.getElementById("modalRace");
-const modalType = document.getElementById("modalType");
+const modalTyping = document.getElementById("modalTyping"); // Replaced multiple spans with one clean string
 const modalLevel = document.getElementById("modalLevel");
 const modalDesc = document.getElementById("modalDesc");
 const atkContainer = document.getElementById("atkContainer");
@@ -68,7 +67,6 @@ async function init() {
     } catch (err) { fetchDatabase(); }
 }
 
-// THE FIX: Fetching both the Card Database AND the Set Timeline
 async function fetchDatabase() {
     try {
         const [cardsRes, setsRes] = await Promise.all([
@@ -80,8 +78,9 @@ async function fetchDatabase() {
         const setsData = await setsRes.json();
         
         ygoDatabase = cardsData.data;
-        ygoSets = setsData; // Load the historical set dates
+        ygoSets = setsData;
         
+        buildProcessedCollection(); // THE FIX: Pre-calculate everything ONCE
         renderCards();
     } catch (err) {
         console.error("Failed to fetch YGO databases:", err);
@@ -92,11 +91,42 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
-// Render Logic & Advanced Filtering
+// THE LAG FIX: O(1) Dictionary Lookup and Pre-Processing
+function buildProcessedCollection() {
+    const fullCollection = getCollection();
+    
+    // Create a dictionary of the DB to avoid doing .find() 13,000 times per card
+    const dbMap = new Map();
+    ygoDatabase.forEach(c => {
+        dbMap.set(decodeHTML(c.name).toLowerCase(), c);
+    });
+
+    processedCollection = fullCollection.map(item => {
+        const decodedName = decodeHTML(item['Card Name']);
+        const searchName = decodedName.toLowerCase();
+        
+        // Instant map lookup
+        const dbCard = dbMap.get(searchName);
+        
+        let price = 0;
+        if (dbCard && dbCard.card_prices && dbCard.card_prices[0]) {
+            price = parseFloat(dbCard.card_prices[0].tcgplayer_price) || 0;
+        }
+        
+        return { 
+            item, 
+            dbCard, 
+            price, 
+            qty: parseInt(item.Quantity) || 1,
+            searchString: (searchName + " " + (item['Set Code'] || "").toLowerCase()) // Pre-build search string
+        };
+    });
+}
+
+// Instantaneous Rendering
 function renderCards() {
     if (!grid) return;
     grid.innerHTML = '';
-    const fullCollection = getCollection();
     
     let totalValue = 0;
     let totalCards = 0;
@@ -107,21 +137,9 @@ function renderCards() {
     const lvlVal = levelFilter ? levelFilter.value : 'All';
     const sortVal = sortFilter ? sortFilter.value : 'name_asc';
 
-    let displayData = fullCollection.map(item => {
-        const dbCard = ygoDatabase.find(c => decodeHTML(c.name).toLowerCase() === decodeHTML(item['Card Name']).toLowerCase());
-        let price = 0;
-        if (dbCard && dbCard.card_prices && dbCard.card_prices[0]) {
-            price = parseFloat(dbCard.card_prices[0].tcgplayer_price) || 0;
-        }
-        const qty = parseInt(item.Quantity) || 1;
-        totalValue += (price * qty);
-        return { item, dbCard, price, qty };
-    });
-
-    displayData = displayData.filter(data => {
-        const cardName = decodeHTML(data.item['Card Name']).toLowerCase();
-        const cardCode = (data.item['Set Code'] || '').toLowerCase();
-        const matchesSearch = cardName.includes(searchTerm) || cardCode.includes(searchTerm);
+    // Filters are now working on pre-calculated data (lightning fast)
+    let displayData = processedCollection.filter(data => {
+        const matchesSearch = data.searchString.includes(searchTerm);
 
         let matchesType = true;
         let matchesAttr = true;
@@ -160,8 +178,9 @@ function renderCards() {
     });
 
     displayData.forEach(data => {
-        const { item, dbCard, qty } = data;
+        const { item, dbCard, qty, price } = data;
         totalCards += qty;
+        totalValue += (price * qty);
 
         const cardDiv = document.createElement('div');
         cardDiv.className = 'card-item';
@@ -204,7 +223,7 @@ function getBanlistStatus(status) {
     return status;
 }
 
-// Blended Modal Logic
+// Modal Logic
 function openModal(item, dbCard) {
     try {
         if (modalImage) {
@@ -213,9 +232,24 @@ function openModal(item, dbCard) {
         }
         
         if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
-        if (modalAttribute) modalAttribute.textContent = dbCard && dbCard.attribute ? `${dbCard.attribute}` : "";
-        if (modalRace) modalRace.textContent = dbCard ? (dbCard.race || "Unknown") : "N/A";
-        if (modalType) modalType.textContent = dbCard ? (dbCard.type || "Custom") : "Custom / Unreleased";
+        
+        // THE FIX: Clean [ DARK / Dragon / Effect ] String Builder
+        if (modalTyping) {
+            let typingStr = "Custom / Unreleased";
+            if (dbCard) {
+                const isSpellTrap = dbCard.type.includes("Spell") || dbCard.type.includes("Trap");
+                if (isSpellTrap) {
+                    const mainType = dbCard.type.toUpperCase().replace(" CARD", "");
+                    typingStr = `${mainType} / ${dbCard.race}`; // Produces: SPELL / Normal
+                } else {
+                    const attr = dbCard.attribute ? dbCard.attribute : "UNKNOWN";
+                    const race = dbCard.race || "Unknown";
+                    const type = dbCard.type ? dbCard.type.replace(" Monster", "") : "Effect";
+                    typingStr = `${attr} / ${race} / ${type}`; // Produces: DARK / Dragon / Effect
+                }
+            }
+            modalTyping.textContent = typingStr;
+        }
         
         if (modalLevel) {
             let lvlStr = "";
@@ -268,15 +302,11 @@ function openModal(item, dbCard) {
             }
         }
 
-        // THE FIX: Reliable Release Dates cross-referenced against the secondary API
         let mySetInfo = item['Product'] || "Unknown Product";
         let firstSetInfo = "N/A";
-
-        // Extract the prefix (e.g., "L26D" from "L26D-ENS01")
         const mySetPrefix = (item['Set Code'] || "").split('-')[0];
         let mySetDate = "Unknown Date";
         
-        // Handle custom 2026 sets manually, otherwise search the API timeline
         if (mySetPrefix === "L26D") {
             mySetDate = "2026"; 
         } else if (ygoSets.length > 0) {
@@ -293,7 +323,6 @@ function openModal(item, dbCard) {
             
             const officialFirstDate = (dbCard.misc_info && dbCard.misc_info[0] && dbCard.misc_info[0].tcg_date) ? dbCard.misc_info[0].tcg_date : null;
 
-            // Search the timeline to find the absolute oldest printing of this specific card
             if (dbCard.card_sets && ygoSets.length > 0) {
                 dbCard.card_sets.forEach(cs => {
                     const prefix = cs.set_code.split('-')[0];
@@ -362,11 +391,20 @@ if (form) {
         form.reset();
         addStatus.textContent = "Card added successfully!";
         addStatus.style.color = "#4caf50";
+        buildProcessedCollection(); // Refresh dictionary on add
         renderCards();
     });
 }
 
-if (searchInput) searchInput.addEventListener('input', renderCards);
+// DEBOUNCE: Delays rendering by 150ms while typing so the browser doesn't freeze
+let searchTimeout;
+if (searchInput) {
+    searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(renderCards, 150);
+    });
+}
+
 if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (levelFilter) levelFilter.addEventListener('change', renderCards);
@@ -390,12 +428,13 @@ if (clearLocalBtn) {
         if(confirm('Did you upload your exported CSV to GitHub yet?')) {
             localAdditions = [];
             localStorage.removeItem('ygo_local_additions');
+            buildProcessedCollection();
             renderCards();
         }
     });
 }
 
-// --- 3D TILT EFFECT LOGIC (INTENSIFIED) ---
+// 3D TILT EFFECT LOGIC
 const tiltImage = document.getElementById("modalImage");
 const tiltContainer = document.querySelector(".modal-image-container");
 
@@ -423,7 +462,6 @@ if (tiltContainer && tiltImage) {
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
 
-        // THE FIX: Cranked intensity from 40 to 75 and increased depth scale
         const rotateY = x * 75; 
         const rotateX = -(y * 75); 
 
