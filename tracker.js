@@ -469,32 +469,43 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-// --- THE NEW AUTHENTIC FOIL MATH (JS Cleaned) ---
+// --- THE NEW AUTHENTIC FOIL MATH ---
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
 const foilLayer = document.getElementById("foilLayer");
 
 if (tiltContainer && tiltWrapper && foilLayer) {
-    let isDragging = false;
-
-    tiltContainer.addEventListener('mousedown', (e) => {
-        isDragging = true;
-        e.preventDefault(); 
-        tiltWrapper.style.cursor = "grabbing";
-    });
-
-    window.addEventListener('mouseup', () => {
-        isDragging = false;
-        tiltWrapper.style.cursor = "grab";
-        tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-        tiltWrapper.style.transition = `transform 0.5s ease-out`;
+    tiltContainer.addEventListener('mousemove', (e) => {
+        const rect = tiltContainer.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
         
+        const x = e.clientX - rect.left - centerX;
+        const y = e.clientY - rect.top - centerY;
+
+        // 3D Tilt
+        const rotateX = (y / centerY) * -15; 
+        const rotateY = (x / centerX) * 15; 
+        tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+
+        // FOIL ENGINE: Passes variables to CSS
         if (foilSelect && foilSelect.value !== 'none') {
-            foilLayer.style.setProperty('--o', '0.1'); 
-            foilLayer.style.setProperty('--x', '0px');
-            foilLayer.style.setProperty('--y', '0px');
+            const dxyMax = Math.hypot(centerX, centerY);
+            let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
+            
+            foilLayer.style.setProperty('--o', opacityCalc);
+            foilLayer.style.setProperty('--x', `${x * 0.5}px`);
+            foilLayer.style.setProperty('--y', `${y * 0.5}px`);
+        } else {
+            foilLayer.style.setProperty('--o', '0');
         }
     });
+
+    tiltContainer.addEventListener('mouseleave', () => {
+        tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+        foilLayer.style.setProperty('--o', '0');
+    });
+}
 
     tiltContainer.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
