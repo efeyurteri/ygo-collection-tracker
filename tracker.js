@@ -423,7 +423,7 @@ if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
 
-// --- THE FOIL AND TILT SYSTEM ---
+// --- THE NEW AUTHENTIC FOIL MATH ---
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
 const foilLayer = document.getElementById("foilLayer");
@@ -443,8 +443,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
         tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
-        // Softly fade foil back to resting state
-        if (foilSelect && foilSelect.value !== 'none') {
+        if (foilSelect && foilSelect.value === 'secret') {
+            foilLayer.style.opacity = '0.3';
+            foilLayer.style.backgroundPosition = `0px 0px, 50% 50%`; 
+        } else if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.style.opacity = '0.3';
             foilLayer.style.backgroundPosition = `50% 50%`; 
         }
@@ -456,23 +458,33 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transition = 'none';
 
         const rect = tiltContainer.getBoundingClientRect();
+        
+        // Calculate raw cursor distance from center
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
 
+        // Apply 3D physical tilt to the card container
         const rotateY = x * 75; 
         const rotateX = -(y * 75); 
-
         tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`;
 
-        // FOIL CALCULATION
+        // FOIL PARALLAX CALCULATION
         if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
             foilLayer.style.opacity = '1';
             
-            // Move the gradient opposite to the tilt
-            const bgX = (x + 0.5) * 100;
-            const bgY = (y + 0.5) * 100;
-            foilLayer.style.backgroundPosition = `${bgX}% ${bgY}%`;
+            // Map the tilt axis to an aggressive gradient shift
+            const bgX = (x + 0.5) * 150 - 25; 
+            const bgY = (y + 0.5) * 150 - 25; 
+
+            if (foilSelect.value === 'secret') {
+                // THE PARALLAX FIX: Layer 1 (Sharp Lines) stays perfectly still at 0px 0px
+                // Layer 2 (Rainbow) smoothly shifts around beneath the lines
+                foilLayer.style.backgroundPosition = `0px 0px, ${100 - bgX}% ${100 - bgY}%`;
+            } else {
+                // Ultra Rare moves everything together
+                foilLayer.style.backgroundPosition = `${100 - bgX}% ${100 - bgY}%`;
+            }
         } else {
             foilLayer.style.opacity = '0';
         }
@@ -485,7 +497,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
              tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
-             if (foilSelect && foilSelect.value !== 'none') {
+             if (foilSelect && foilSelect.value === 'secret') {
+                 foilLayer.style.opacity = '0.3';
+                 foilLayer.style.backgroundPosition = `0px 0px, 50% 50%`;
+             } else if (foilSelect && foilSelect.value !== 'none') {
                  foilLayer.style.opacity = '0.3';
                  foilLayer.style.backgroundPosition = `50% 50%`;
              }
