@@ -241,28 +241,26 @@ function applyCardMask(dbCard) {
     let maskPositions = [];
 
     // 1. The Art Box (Exact layout: left 42px, top 93px, width 270px, height 270px)
-    maskImages.push('linear-gradient(black, black)');
+    maskImages.push('linear-gradient(rgba(0,0,0,1), rgba(0,0,0,1))');
     maskSizes.push('76.27% 52.32%'); 
     maskPositions.push('50% 37.8%');
 
-    // 2. The Attribute Circle (Exact layout: left 296px, top 24px, 32x32)
-    // Only apply if it's a monster or spell/trap with an attribute
+    // 2. The Attribute Circle
     if (dbCard && (dbCard.attribute || dbCard.type.includes("Spell") || dbCard.type.includes("Trap"))) {
-        maskImages.push('radial-gradient(ellipse, black 68%, transparent 70%)');
+        maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
         maskSizes.push('9.03% 6.2%');
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (Exact layout: y=63px, 22x22 stars spaced by 27px)
+    // 3. Level/Rank Stars
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
         
         for (let i = 0; i < numStars; i++) {
-            maskImages.push('radial-gradient(ellipse, black 68%, transparent 70%)');
+            maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // XYZ starts at left 43px. Others start right 289px.
             let offsetX = isXyz ? (43 + (i * 27)) : (289 - (i * 27));
             let xPercent = (offsetX / 332) * 100;
             
@@ -471,7 +469,7 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-// --- THE NEW AUTHENTIC FOIL MATH (Adapted from ygo-ocg-secret-rare) ---
+// --- THE NEW AUTHENTIC FOIL MATH (JS Cleaned) ---
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
 const foilLayer = document.getElementById("foilLayer");
@@ -507,25 +505,22 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         
-        // Exact distances from center
         const x = e.clientX - rect.left - centerX;
         const y = e.clientY - rect.top - centerY;
 
-        // Dynamic 3D tilt
         const rotateX = (y / centerY) * -15; 
         const rotateY = (x / centerX) * 15; 
         tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
 
-        // FOIL PARALLAX CALCULATION
         if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
             
-            // Calculate opacity based on distance from center (Math.hypot method)
             const dxyMax = Math.hypot(centerX, centerY);
             let opacityCalc = 1.825 - (Math.hypot(x, y) / dxyMax);
             if (opacityCalc > 1) opacityCalc = 1;
             if (opacityCalc < 0) opacityCalc = 0;
             
+            // WE FEED THE VARIABLES ONLY - No backgroundPosition Overrides
             foilLayer.style.setProperty('--o', opacityCalc);
             foilLayer.style.setProperty('--x', `${x * 1.25}px`);
             foilLayer.style.setProperty('--y', `${y * 1.25}px`);
