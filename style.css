@@ -298,3 +298,53 @@ hr { border: 0; height: 1px; background: #444; margin: 15px 0; }
 #modalImage:active {
     cursor: grabbing;
 }
+
+/* --- FOIL EFFECT STYLES --- */
+
+.foil-layer {
+    /* We make the gradients massive so we can pan them around smoothly */
+    background-size: 200% 200%; 
+}
+
+/* Basic Gloss: A simple moving white sheen */
+.foil-gloss {
+    background: linear-gradient(105deg, 
+        transparent 20%, 
+        rgba(255, 255, 255, 0.4) 25%, 
+        rgba(255, 255, 255, 0.1) 30%, 
+        transparent 35%
+    );
+    mix-blend-mode: color-dodge;
+}
+
+/* Ultra Rare: A soft moving rainbow */
+.foil-ultra {
+    background: linear-gradient(105deg, 
+        transparent 15%, 
+        rgba(255, 215, 0, 0.35) 20%, 
+        rgba(255, 105, 180, 0.35) 25%, 
+        rgba(0, 255, 255, 0.35) 30%, 
+        transparent 35%
+    );
+    mix-blend-mode: color-dodge;
+}
+
+/* Secret Rare: Diagonal prismatic lines + rainbow sheen */
+.foil-secret {
+    background: 
+        repeating-linear-gradient(45deg, 
+            rgba(255, 255, 255, 0) 0%, 
+            rgba(255, 255, 255, 0.1) 2%, 
+            rgba(255, 0, 255, 0.2) 4%, 
+            rgba(0, 255, 255, 0.2) 6%, 
+            rgba(255, 255, 255, 0) 8%
+        ),
+        linear-gradient(105deg, 
+            transparent 15%, 
+            rgba(255, 255, 255, 0.5) 25%, 
+            transparent 35%
+        );
+    background-size: 300% 300%;
+    mix-blend-mode: color-dodge;
+}
+
