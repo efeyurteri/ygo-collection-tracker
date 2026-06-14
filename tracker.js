@@ -259,7 +259,7 @@ function applyCardMask(dbCard) {
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (THE MATH FIX)
+    // 3. Level/Rank Stars (Yıldızlar biraz sola kaydırıldı ve araları açıldı)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
@@ -268,9 +268,9 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // YILDIZ MATEMATİĞİ DÜZELTİLDİ: Sağa kaydırıldı (304 / 43) ve daraltıldı (21.5)
-            let offsetX = isXyz ? (43 + (i * 21.5)) : (304 - (i * 21.5));
-            let xPercent = (offsetX / 332) * 100;
+            // Xyz (42) ve Normal (297) başlangıcı. Aralık 23.0 olarak açıldı. Oran: 354.
+            let offsetX = isXyz ? (42 + (i * 23.0)) : (297 - (i * 23.0));
+            let xPercent = (offsetX / 354) * 100;
             maskPositions.push(`${xPercent}% 12.75%`);
         }
     }
