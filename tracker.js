@@ -234,32 +234,33 @@ function getBanlistStatus(status) {
 }
 
 // --------------------------------------------------------
-// DYNAMIC FOIL MASK GENERATOR (YGOPRODeck Coordinates)
+// DYNAMIC FOIL MASK GENERATOR (Exact YGOPRODeck Coordinates)
 // --------------------------------------------------------
 function applyCardMask(dbCard) {
     const foilLayer = document.getElementById("foilLayer");
     const tiltWrapper = document.getElementById("tiltWrapper");
     if (!foilLayer || !tiltWrapper) return;
     
+    // Lock the wrapper to standard YGO aspect ratio for exact math
     tiltWrapper.style.aspectRatio = "354 / 516";
     
     let maskImages = [];
     let maskSizes = [];
     let maskPositions = [];
 
-    // 1. The Art Box
+    // 1. The Art Box (Exact Layout)
     maskImages.push('linear-gradient(rgba(0,0,0,1), rgba(0,0,0,1))');
     maskSizes.push('76.27% 52.32%'); 
     maskPositions.push('50% 37.8%');
 
-    // 2. The Attribute Circle
+    // 2. The Attribute Circle (Top Right)
     if (dbCard && (dbCard.attribute || dbCard.type.includes("Spell") || dbCard.type.includes("Trap"))) {
         maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
         maskSizes.push('9.03% 6.2%');
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Level/Rank Stars (THE MATH FIX)
+    // 3. Level/Rank Stars (THE MATHEMATICAL FIX)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
@@ -268,9 +269,11 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Adjusted: Starting further right (296) and closer together (24.2)
-            let offsetX = isXyz ? (36 + (i * 24.2)) : (296 - (i * 24.2));
-            let xPercent = (offsetX / 332) * 100;
+            // Xyz alignment starts at 43px. Normal starts at 289px.
+            // Spacing is EXACTLY 22.5 pixels between stars relative to a 354 width card.
+            let offsetX = isXyz ? (43 + (i * 22.5)) : (289 - (i * 22.5));
+            let xPercent = (offsetX / 354) * 100;
+            
             maskPositions.push(`${xPercent}% 12.75%`);
         }
     }
@@ -304,14 +307,16 @@ function openModal(item, dbCard) {
         // Inject pixel-perfect coordinate masks
         applyCardMask(dbCard);
         
+        // Handle Foil Layer Activation
         const foilLayer = document.getElementById("foilLayer");
         if (foilLayer && foilSelect) {
             if (foilSelect.value !== 'none') {
                 foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-                foilLayer.style.opacity = '0.2'; 
+                // Set base opacity so it rests beautifully
+                foilLayer.style.setProperty('--o', '0.4'); 
             } else {
                 foilLayer.className = `foil-layer`;
-                foilLayer.style.opacity = '0';
+                foilLayer.style.setProperty('--o', '0');
             }
         }
         
@@ -501,10 +506,10 @@ if (foilSelect) {
         if (modal && modal.style.display === "block" && foilLayer) {
             if (foilSelect.value !== 'none') {
                 foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-                foilLayer.style.opacity = '0.2';
+                foilLayer.style.setProperty('--o', '0.4'); // Resting brightness
             } else {
                 foilLayer.className = `foil-layer`;
-                foilLayer.style.opacity = '0';
+                foilLayer.style.setProperty('--o', '0');
             }
         }
     });
@@ -534,7 +539,7 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
         if (foilSelect && foilSelect.value !== 'none') {
-            foilLayer.style.setProperty('--o', '0.1'); 
+            foilLayer.style.setProperty('--o', '0.4'); 
             foilLayer.style.setProperty('--x', '0px');
             foilLayer.style.setProperty('--y', '0px');
         }
@@ -559,12 +564,16 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
             
+            // Calculates intense center-light dropoff for realism
             const dxyMax = Math.hypot(centerX, centerY);
             let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
             
+            // Inject strictly CSS variables so background blend engine does not crash
             foilLayer.style.setProperty('--o', opacityCalc);
-            foilLayer.style.setProperty('--x', `${x * 0.5}px`);
-            foilLayer.style.setProperty('--y', `${y * 0.5}px`);
+            
+            // The 1.25 multiplier ensures massive, intense movement sweeps across the card
+            foilLayer.style.setProperty('--x', `${x * 1.25}px`);
+            foilLayer.style.setProperty('--y', `${y * 1.25}px`);
         } else {
             foilLayer.style.setProperty('--o', '0');
         }
@@ -578,7 +587,7 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
              if (foilSelect && foilSelect.value !== 'none') {
-                 foilLayer.style.setProperty('--o', '0.1');
+                 foilLayer.style.setProperty('--o', '0.4');
                  foilLayer.style.setProperty('--x', '0px');
                  foilLayer.style.setProperty('--y', '0px');
              }
