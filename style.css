@@ -128,29 +128,28 @@ input, select {
     border-radius: 8px;
     z-index: 5;
     transition: opacity 0.3s;
-    
-    /* JavaScript overrides these dynamically */
-    opacity: var(--o, 0);
-    --x: 0px;
-    --y: 0px;
+    mix-blend-mode: color-dodge;
+    transform: translateZ(1px); /* Forces it above the image during 3D tilt */
 }
 
 /* Ultra Rare: Smooth moving rainbow sweep */
 .foil-ultra {
-    mix-blend-mode: color-dodge;
-    background: repeating-linear-gradient(
+    background-image: repeating-linear-gradient(
         115deg,
         transparent 0%,
         rgba(255, 0, 0, 0.4) 10%, rgba(255, 255, 0, 0.4) 20%,
         rgba(0, 255, 0, 0.4) 30%, rgba(0, 255, 255, 0.4) 40%,
         rgba(0, 0, 255, 0.4) 50%, rgba(255, 0, 255, 0.4) 60%,
         transparent 70%
-    ) calc(50% + var(--x) * -2) calc(50% + var(--y) * -2) / 300% 300%;
+    );
+    background-size: 300% 300%;
+    background-position: calc(50% + var(--x) * -2) calc(50% + var(--y) * -2);
 }
 
-/* Secret Rare: Composition stack adapted from physical etching mechanics */
+/* Secret Rare: Explicit Composition stack adapted from physical etching mechanics */
 .foil-secret {
-    background: 
+    background-color: #1a1a1a;
+    background-image: 
         /* 1. The Rainbow Reflection */
         repeating-linear-gradient(
             30deg,
@@ -158,18 +157,32 @@ input, select {
             rgb(0, 255, 0), rgb(0, 255, 255), rgb(0, 120, 255),
             rgb(0, 255, 255), rgb(0, 255, 0), rgb(255, 255, 0),
             rgb(255, 120, 0) 30em
-        ) calc(50% + var(--x) * -2) calc(50% + var(--y) * -2) / 300% 300%,
-        
+        ),
         /* 2. The Dotted/Scanline Texture */
-        linear-gradient(transparent, rgba(0, 0, 0, 0.75), transparent) 0 0 / 100% 3px,
-        radial-gradient(transparent, rgba(0, 0, 0, 0.5)) 0 0 / 2px 2px,
-        
+        linear-gradient(transparent, rgba(0, 0, 0, 0.75), transparent),
+        radial-gradient(transparent, rgba(0, 0, 0, 0.5)),
         /* 3. The Grid (Etched Lines) */
-        linear-gradient(transparent 40%, #fff 49%, #fff 51%, transparent 60%) 0 calc(var(--y) * -0.2) / 100% 7.5em,
-        linear-gradient(90deg, transparent 50%, #fff 59%, #fff 61%, transparent 70%) calc(var(--x) * -0.2) 0 / 7.6em 100%,
-        linear-gradient(90deg, transparent 55%, #fff, transparent 65%) calc(var(--x) * -0.4) 0 / 7.5em 100%,
+        linear-gradient(transparent 40%, #fff 49%, #fff 51%, transparent 60%),
+        linear-gradient(90deg, transparent 50%, #fff 59%, #fff 61%, transparent 70%),
+        linear-gradient(90deg, transparent 55%, #fff, transparent 65%);
         
-        #1a1a1a;
+    background-size: 
+        300% 300%,
+        100% 3px,
+        2px 2px,
+        100% 7.5em,
+        7.6em 100%,
+        7.5em 100%;
 
-    background-blend-mode: color-dodge, normal, normal, normal, normal, normal;
+    /* Parallax Mapping: The grid moves slower than the rainbow to create physical depth */
+    background-position: 
+        calc(50% + var(--x) * -2) calc(50% + var(--y) * -2),
+        0px 0px,
+        0px 0px,
+        0px calc(var(--y) * -0.2),
+        calc(var(--x) * -0.2) 0px,
+        calc(var(--x) * -0.4) 0px;
+
+    /* Colors the rainbow into the scanlines, then color-dodges the whole layer */
+    background-blend-mode: color, normal, normal, normal, normal, normal;
 }
