@@ -50,7 +50,6 @@ function decodeHTML(text) {
     return textArea.value;
 }
 
-// Initialize Data
 async function init() {
     try {
         const response = await fetch(CSV_FILE);
@@ -92,7 +91,6 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
-// THE PRE-PROCESSOR: Extracts Date and Level for instant sorting
 function buildProcessedCollection() {
     const fullCollection = getCollection();
     
@@ -111,12 +109,10 @@ function buildProcessedCollection() {
             price = parseFloat(dbCard.card_prices[0].tcgplayer_price) || 0;
         }
 
-        // Cache Level for Sort
         let cardLevel = 0;
         if (dbCard) { cardLevel = dbCard.level || dbCard.linkval || 0; }
 
-        // Cache Date for Sort
-        let earliestDate = "9999-99-99"; // Fallback puts unknowns at bottom
+        let earliestDate = "9999-99-99"; 
         if (dbCard && dbCard.card_sets && ygoSets.length > 0) {
             dbCard.card_sets.forEach(cs => {
                 const prefix = cs.set_code.split('-')[0];
@@ -184,7 +180,6 @@ function renderCards() {
             const defB = (b.dbCard && b.dbCard.def !== undefined) ? b.dbCard.def : -1;
             return defB - defA;
         }
-        // NEW: Level & Date Sorts
         if (sortVal === 'level_desc') return b.cardLevel - a.cardLevel;
         if (sortVal === 'level_asc') return a.cardLevel - b.cardLevel;
         if (sortVal === 'date_desc') return b.earliestDate.localeCompare(a.earliestDate);
@@ -238,13 +233,68 @@ function getBanlistStatus(status) {
     return status;
 }
 
-// Modal Logic
+// --- DYNAMIC FOIL MASK GENERATOR ---
+function applyCardMask(dbCard) {
+    const foilLayer = document.getElementById("foilLayer");
+    if (!foilLayer) return;
+    
+    let maskImages = [];
+    let maskSizes = [];
+    let maskPositions = [];
+
+    // 1. The Art Box (Always foiled)
+    maskImages.push('linear-gradient(black, black)');
+    maskSizes.push('75% 52.5%'); 
+    maskPositions.push('center 18.5%');
+
+    // 2. The Attribute Circle (Top Right)
+    maskImages.push('radial-gradient(ellipse, black 50%, transparent 55%)');
+    maskSizes.push('9.5% 6.5%');
+    maskPositions.push('88.5% 8.6%');
+
+    // 3. Level/Rank Stars (Dynamic Calculation)
+    if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
+        let numStars = dbCard.level;
+        let isXyz = dbCard.type.includes("XYZ");
+        
+        for (let i = 0; i < numStars; i++) {
+            maskImages.push('radial-gradient(ellipse, black 50%, transparent 55%)');
+            maskSizes.push('6.1% 4.2%');
+            
+            if (isXyz) {
+                // Rank stars align to the left, stacking right
+                maskPositions.push(`calc(14.5% + ${i * 6.5}%) 14.6%`);
+            } else {
+                // Level stars align to the right, stacking left
+                maskPositions.push(`calc(85.5% - ${i * 6.5}%) 14.6%`);
+            }
+        }
+    }
+
+    const maskImageStr = maskImages.join(', ');
+    const maskSizeStr = maskSizes.join(', ');
+    const maskPositionStr = maskPositions.join(', ');
+
+    foilLayer.style.webkitMaskImage = maskImageStr;
+    foilLayer.style.webkitMaskSize = maskSizeStr;
+    foilLayer.style.webkitMaskPosition = maskPositionStr;
+    foilLayer.style.webkitMaskRepeat = 'no-repeat';
+    
+    foilLayer.style.maskImage = maskImageStr;
+    foilLayer.style.maskSize = maskSizeStr;
+    foilLayer.style.maskPosition = maskPositionStr;
+    foilLayer.style.maskRepeat = 'no-repeat';
+}
+
 function openModal(item, dbCard) {
     try {
         if (modalImage) {
             modalImage.src = dbCard ? dbCard.card_images[0].image_url : `images/${item['Set Code']}.jpg`;
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
+        
+        // Apply the dynamic stencil for the foil
+        applyCardMask(dbCard);
         
         if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
         
@@ -444,10 +494,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
         if (foilSelect && foilSelect.value === 'secret') {
-            foilLayer.style.opacity = '0.3';
+            foilLayer.style.opacity = '0.4';
             foilLayer.style.backgroundPosition = `0px 0px, 50% 50%`; 
         } else if (foilSelect && foilSelect.value !== 'none') {
-            foilLayer.style.opacity = '0.3';
+            foilLayer.style.opacity = '0.4';
             foilLayer.style.backgroundPosition = `50% 50%`; 
         }
     });
@@ -459,11 +509,9 @@ if (tiltContainer && tiltWrapper && foilLayer) {
 
         const rect = tiltContainer.getBoundingClientRect();
         
-        // Calculate raw cursor distance from center
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
 
-        // Apply 3D physical tilt to the card container
         const rotateY = x * 75; 
         const rotateX = -(y * 75); 
         tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`;
@@ -478,11 +526,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
             const bgY = (y + 0.5) * 150 - 25; 
 
             if (foilSelect.value === 'secret') {
-                // THE PARALLAX FIX: Layer 1 (Sharp Lines) stays perfectly still at 0px 0px
-                // Layer 2 (Rainbow) smoothly shifts around beneath the lines
+                // Parallax Layering: The SVG dots stay perfectly locked to 0px 0px.
+                // The rainbow gradient sweeps massively behind it.
                 foilLayer.style.backgroundPosition = `0px 0px, ${100 - bgX}% ${100 - bgY}%`;
             } else {
-                // Ultra Rare moves everything together
                 foilLayer.style.backgroundPosition = `${100 - bgX}% ${100 - bgY}%`;
             }
         } else {
@@ -498,10 +545,10 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
              if (foilSelect && foilSelect.value === 'secret') {
-                 foilLayer.style.opacity = '0.3';
+                 foilLayer.style.opacity = '0.4';
                  foilLayer.style.backgroundPosition = `0px 0px, 50% 50%`;
              } else if (foilSelect && foilSelect.value !== 'none') {
-                 foilLayer.style.opacity = '0.3';
+                 foilLayer.style.opacity = '0.4';
                  foilLayer.style.backgroundPosition = `50% 50%`;
              }
          }
