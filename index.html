@@ -54,20 +54,11 @@
                 <option value="DIVINE">DIVINE</option>
             </select>
 
-            <select id="levelFilter" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
-                <option value="All">All Levels/Links</option>
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-                <option value="7">7</option>
-                <option value="8">8</option>
-                <option value="9">9</option>
-                <option value="10">10</option>
-                <option value="11">11</option>
-                <option value="12">12</option>
+            <select id="foilSelect" style="padding: 10px; border-radius: 4px; border: 1px solid #6200ee; background: #1a1a2e; color: white; font-weight: bold;">
+                <option value="none">No Foil</option>
+                <option value="gloss">Basic Gloss</option>
+                <option value="ultra">Ultra Rare (Holo)</option>
+                <option value="secret">Secret Rare (Prismatic)</option>
             </select>
 
             <select id="sortFilter" style="padding: 10px; border-radius: 4px; border: 1px solid #444; background: #2a2a2a; color: white;">
@@ -76,6 +67,10 @@
                 <option value="price_desc">Price (High-Low)</option>
                 <option value="atk_desc">ATK (High-Low)</option>
                 <option value="def_desc">DEF (High-Low)</option>
+                <option value="level_desc">Level/Rank/Link (High-Low)</option>
+                <option value="level_asc">Level/Rank/Link (Low-High)</option>
+                <option value="date_desc">Release Date (Newest)</option>
+                <option value="date_asc">Release Date (Oldest)</option>
             </select>
         </section>
 
@@ -87,8 +82,12 @@
             <span class="close-btn" style="position:absolute; right:20px; top:15px; font-size:32px; font-weight:bold; cursor:pointer; color: #aaa; z-index: 10;">&times;</span>
             
             <div class="modal-body" style="display: flex; gap: 40px; margin-top: 10px; flex-wrap: wrap;">
-                <div class="modal-image-container" style="flex: 0 0 340px; padding: 15px;">
-                    <img id="modalImage" src="" alt="Card Image" style="width: 100%; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                
+                <div class="modal-image-container" style="flex: 0 0 340px; padding: 15px; perspective: 1000px; display: flex; justify-content: center; align-items: center;">
+                    <div id="tiltWrapper" style="position: relative; width: 100%; border-radius: 8px; transform-style: preserve-3d; will-change: transform; transition: transform 0.1s ease-out; cursor: grab; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                        <img id="modalImage" src="" alt="Card Image" style="width: 100%; height: auto; display: block; border-radius: 8px;">
+                        <div id="foilLayer" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; border-radius: 8px; opacity: 0; transition: opacity 0.3s; z-index: 5;"></div>
+                    </div>
                 </div>
                 
                 <div class="modal-info" style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
