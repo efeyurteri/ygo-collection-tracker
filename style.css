@@ -303,53 +303,72 @@ hr { border: 0; height: 1px; background: #444; margin: 15px 0; }
 
 /* --- THE AUTHENTIC FOIL STYLES --- */
 
+/* --- THE AUTHENTIC MASKED FOIL STYLES --- */
+
 .foil-layer {
-    background-size: 200% 200%; 
+    /* This cuts out the foil perfectly so it ONLY applies to:
+       1. The Attribute (Top Right Circle)
+       2. The Level Stars (Strip below the name)
+       3. The Card Art (Large square in the upper half)
+    */
+    -webkit-mask-image: 
+        radial-gradient(circle at 86% 7.5%, black 4.5%, transparent 5%),
+        linear-gradient(to bottom, transparent 12%, black 12%, black 16%, transparent 16%),
+        linear-gradient(to bottom, transparent 18.5%, black 18.5%, black 69.5%, transparent 69.5%);
+    -webkit-mask-size: 100% 100%, 82% 100%, 74.5% 100%;
+    -webkit-mask-position: 0 0, center 0, center 0;
+    -webkit-mask-repeat: no-repeat;
+    
+    mask-image: 
+        radial-gradient(circle at 86% 7.5%, black 4.5%, transparent 5%),
+        linear-gradient(to bottom, transparent 12%, black 12%, black 16%, transparent 16%),
+        linear-gradient(to bottom, transparent 18.5%, black 18.5%, black 69.5%, transparent 69.5%);
+    mask-size: 100% 100%, 82% 100%, 74.5% 100%;
+    mask-position: 0 0, center 0, center 0;
+    mask-repeat: no-repeat;
 }
 
-/* Ultra Rare: A massive, smooth, vibrant rainbow sweep */
+/* Ultra Rare: High frequency, tightly packed rainbow that shifts together */
 .foil-ultra {
-    background-image: linear-gradient(
+    background-image: repeating-linear-gradient(
         115deg,
         transparent 0%,
-        rgba(255, 0, 0, 0.4) 15%,
-        rgba(255, 200, 0, 0.4) 30%,
-        rgba(0, 255, 0, 0.4) 45%,
-        rgba(0, 255, 255, 0.4) 60%,
-        rgba(0, 0, 255, 0.4) 75%,
-        rgba(255, 0, 255, 0.4) 90%,
-        transparent 100%
+        rgba(255, 0, 0, 0.4) 10%,
+        rgba(255, 255, 0, 0.4) 20%,
+        rgba(0, 255, 0, 0.4) 30%,
+        rgba(0, 255, 255, 0.4) 40%,
+        rgba(0, 0, 255, 0.4) 50%,
+        rgba(255, 0, 255, 0.4) 60%,
+        transparent 70%
     );
-    background-size: 300% 300%;
+    background-size: 200% 200%; /* Smaller size = more colors visible at once */
     mix-blend-mode: color-dodge;
 }
 
-/* Secret Rare: Mimics Effect Veiler (Sharp slashes + underlying rainbow parallax) */
+/* Secret Rare: Razor-sharp static lines + shifting rainbow background */
 .foil-secret {
     background-image: 
-        /* The distinct diagonal TCG Secret Rare lines */
+        /* Layer 1: Sharp, 1px thick etched lines */
         repeating-linear-gradient(
             -45deg,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0) 3%,
-            rgba(255, 255, 255, 0.4) 3.5%,
-            rgba(255, 255, 255, 0.5) 4%,
-            rgba(255, 255, 255, 0.4) 4.5%,
-            rgba(255, 255, 255, 0) 5%,
-            rgba(255, 255, 255, 0) 8%
+            rgba(255, 255, 255, 0) 0px,
+            rgba(255, 255, 255, 0) 18px,
+            rgba(255, 255, 255, 0.7) 18.5px,
+            rgba(255, 255, 255, 1) 19px,
+            rgba(255, 255, 255, 0) 19.5px
         ),
-        /* The heavy rainbow spectrum behind the lines */
-        linear-gradient(
+        /* Layer 2: Moving underlying rainbow glare */
+        repeating-linear-gradient(
             115deg,
-            transparent 10%,
-            rgba(255, 0, 0, 0.5) 20%,
-            rgba(255, 255, 0, 0.5) 30%,
-            rgba(0, 255, 0, 0.5) 40%,
-            rgba(0, 255, 255, 0.5) 50%,
-            rgba(0, 0, 255, 0.5) 60%,
-            rgba(255, 0, 255, 0.5) 70%,
-            transparent 80%
+            transparent 0%,
+            rgba(255, 0, 0, 0.5) 10%,
+            rgba(255, 255, 0, 0.5) 20%,
+            rgba(0, 255, 0, 0.5) 30%,
+            rgba(0, 255, 255, 0.5) 40%,
+            rgba(0, 0, 255, 0.5) 50%,
+            rgba(255, 0, 255, 0.5) 60%,
+            transparent 70%
         );
-    background-size: 200% 200%, 300% 300%;
+    background-size: 100% 100%, 200% 200%;
     mix-blend-mode: color-dodge;
 }
