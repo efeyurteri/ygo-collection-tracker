@@ -119,7 +119,7 @@ input, select {
     white-space: nowrap;
 }
 
-/* --- THE AUTHENTIC FOIL ENGINE (Linter Safe) --- */
+/* --- THE AUTHENTIC FOIL ENGINE --- */
 
 .foil-layer {
     position: absolute;
@@ -129,41 +129,60 @@ input, select {
     z-index: 5;
     transition: opacity 0.3s;
     mix-blend-mode: color-dodge;
-    /* Opacity ve Position değerleri artık tamamen JavaScript tarafından yönetiliyor */
+    transform: translateZ(1px); /* Forces it above the image during 3D tilt */
 }
 
+/* Ultra Rare: Smooth moving rainbow sweep */
 .foil-ultra {
     background-image: repeating-linear-gradient(
         115deg,
         transparent 0%,
-        rgba(255, 0, 0, 0.5) 10%, rgba(255, 255, 0, 0.5) 20%,
-        rgba(0, 255, 0, 0.5) 30%, rgba(0, 255, 255, 0.5) 40%,
-        rgba(0, 0, 255, 0.5) 50%, rgba(255, 0, 255, 0.5) 60%,
+        rgba(255, 0, 0, 0.4) 10%, rgba(255, 255, 0, 0.4) 20%,
+        rgba(0, 255, 0, 0.4) 30%, rgba(0, 255, 255, 0.4) 40%,
+        rgba(0, 0, 255, 0.4) 50%, rgba(255, 0, 255, 0.4) 60%,
         transparent 70%
     );
     background-size: 300% 300%;
+    background-position: calc(50% + var(--x) * -2) calc(50% + var(--y) * -2);
 }
 
+/* Secret Rare: Explicit Composition stack adapted from physical etching mechanics */
 .foil-secret {
-    background-color: #1a1a1a; /* Gökkuşağının parlaması için gereken karanlık zemin */
+    background-color: #1a1a1a;
     background-image: 
-        /* Katman 1: Güçlü Gökkuşağı Yansıması */
+        /* 1. The Rainbow Reflection */
         repeating-linear-gradient(
             30deg,
-            rgba(255, 120, 0, 0.8), rgba(255, 120, 0, 0.8), rgba(255, 255, 0, 0.8),
-            rgba(0, 255, 0, 0.8), rgba(0, 255, 255, 0.8), rgba(0, 120, 255, 0.8),
-            rgba(0, 255, 255, 0.8), rgba(0, 255, 0, 0.8), rgba(255, 255, 0, 0.8),
-            rgba(255, 120, 0, 0.8) 30em
+            rgb(255, 120, 0), rgb(255, 120, 0), rgb(255, 255, 0),
+            rgb(0, 255, 0), rgb(0, 255, 255), rgb(0, 120, 255),
+            rgb(0, 255, 255), rgb(0, 255, 0), rgb(255, 255, 0),
+            rgb(255, 120, 0) 30em
         ),
-        /* Katman 2: Tarama Çizgileri */
-        linear-gradient(transparent, rgba(0, 0, 0, 0.5), transparent),
-        /* Katman 3: Hata vermeyen, kusursuz SVG kazıma çizgileri */
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cline x1='-4' y1='20' x2='20' y2='-4' stroke='white' stroke-width='1.5' stroke-dasharray='2 4' /%3E%3C/svg%3E");
-
+        /* 2. The Dotted/Scanline Texture */
+        linear-gradient(transparent, rgba(0, 0, 0, 0.75), transparent),
+        radial-gradient(transparent, rgba(0, 0, 0, 0.5)),
+        /* 3. The Grid (Etched Lines) */
+        linear-gradient(transparent 40%, #fff 49%, #fff 51%, transparent 60%),
+        linear-gradient(90deg, transparent 50%, #fff 59%, #fff 61%, transparent 70%),
+        linear-gradient(90deg, transparent 55%, #fff, transparent 65%);
+        
     background-size: 
         300% 300%,
         100% 3px,
-        16px 16px;
+        2px 2px,
+        100% 7.5em,
+        7.6em 100%,
+        7.5em 100%;
 
-    background-blend-mode: normal;
+    /* Parallax Mapping: The grid moves slower than the rainbow to create physical depth */
+    background-position: 
+        calc(50% + var(--x) * -2) calc(50% + var(--y) * -2),
+        0px 0px,
+        0px 0px,
+        0px calc(var(--y) * -0.2),
+        calc(var(--x) * -0.2) 0px,
+        calc(var(--x) * -0.4) 0px;
+
+    /* Colors the rainbow into the scanlines, then color-dodges the whole layer */
+    background-blend-mode: color, normal, normal, normal, normal, normal;
 }
