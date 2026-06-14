@@ -6,6 +6,7 @@ let ygoDatabase = [];
 let ygoSets = [];
 let processedCollection = []; 
 
+// DOM Elements
 const grid = document.getElementById('cardGrid');
 const form = document.getElementById('addCardForm');
 const searchInput = document.getElementById('searchInput');
@@ -20,6 +21,7 @@ const totalValueDisplay = document.getElementById('totalValue');
 const cardCountDisplay = document.getElementById('cardCount');
 const addStatus = document.getElementById('addStatus');
 
+// Modal Elements
 const modal = document.getElementById("cardModal");
 const closeBtn = document.querySelector(".close-btn");
 const modalImage = document.getElementById("modalImage");
@@ -48,6 +50,9 @@ function decodeHTML(text) {
     return textArea.value;
 }
 
+// --------------------------------------------------------
+// DATA FETCHING & PRE-PROCESSING
+// --------------------------------------------------------
 async function init() {
     try {
         const response = await fetch(CSV_FILE);
@@ -138,6 +143,7 @@ function buildProcessedCollection() {
 function renderCards() {
     if (!grid) return;
     grid.innerHTML = '';
+    
     let totalValue = 0;
     let totalCards = 0;
 
@@ -227,20 +233,22 @@ function getBanlistStatus(status) {
     return status;
 }
 
-// --- DYNAMIC FOIL MASK GENERATOR (Exact YGOPRODeck Coordinates) ---
+// --------------------------------------------------------
+// DYNAMIC FOIL MASK GENERATOR (YGOPRODeck Coordinates)
+// --------------------------------------------------------
 function applyCardMask(dbCard) {
     const foilLayer = document.getElementById("foilLayer");
     const tiltWrapper = document.getElementById("tiltWrapper");
     if (!foilLayer || !tiltWrapper) return;
     
-    // Lock the wrapper to standard YGO aspect ratio (354x516) for exact math
+    // Lock the wrapper to standard YGO aspect ratio for exact math
     tiltWrapper.style.aspectRatio = "354 / 516";
     
     let maskImages = [];
     let maskSizes = [];
     let maskPositions = [];
 
-    // 1. The Art Box (Exact layout: left 42px, top 93px, width 270px, height 270px)
+    // 1. The Art Box
     maskImages.push('linear-gradient(rgba(0,0,0,1), rgba(0,0,0,1))');
     maskSizes.push('76.27% 52.32%'); 
     maskPositions.push('50% 37.8%');
@@ -261,9 +269,9 @@ function applyCardMask(dbCard) {
             maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
+            // Xyz logic aligns stars differently than regular levels
             let offsetX = isXyz ? (43 + (i * 27)) : (289 - (i * 27));
             let xPercent = (offsetX / 332) * 100;
-            
             maskPositions.push(`${xPercent}% 12.75%`);
         }
     }
@@ -283,6 +291,9 @@ function applyCardMask(dbCard) {
     foilLayer.style.maskRepeat = 'no-repeat';
 }
 
+// --------------------------------------------------------
+// MODAL LOGIC
+// --------------------------------------------------------
 function openModal(item, dbCard) {
     try {
         if (modalImage) {
@@ -290,7 +301,7 @@ function openModal(item, dbCard) {
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
         
-        // Inject pixel-perfect coordinate masks
+        // Inject pixel-perfect coordinate masks based on card data
         applyCardMask(dbCard);
         
         if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
@@ -418,6 +429,9 @@ function openModal(item, dbCard) {
 if (closeBtn) closeBtn.addEventListener('click', () => { if (modal) modal.style.display = "none"; });
 window.addEventListener('click', (e) => { if (e.target == modal) modal.style.display = "none"; });
 
+// --------------------------------------------------------
+// FORMS & EVENT LISTENERS
+// --------------------------------------------------------
 if (form) {
     form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -469,43 +483,35 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-// --- THE NEW AUTHENTIC FOIL MATH ---
+
+// --------------------------------------------------------
+// THE FOIL & TILT ENGINE (Dynamic Parallax Variables)
+// --------------------------------------------------------
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
 const foilLayer = document.getElementById("foilLayer");
 
 if (tiltContainer && tiltWrapper && foilLayer) {
-    tiltContainer.addEventListener('mousemove', (e) => {
-        const rect = tiltContainer.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+    let isDragging = false;
+
+    tiltContainer.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        e.preventDefault(); 
+        tiltWrapper.style.cursor = "grabbing";
+    });
+
+    window.addEventListener('mouseup', () => {
+        isDragging = false;
+        tiltWrapper.style.cursor = "grab";
+        tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+        tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
-        const x = e.clientX - rect.left - centerX;
-        const y = e.clientY - rect.top - centerY;
-
-        // 3D Tilt
-        const rotateX = (y / centerY) * -15; 
-        const rotateY = (x / centerX) * 15; 
-        tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
-
-        // FOIL ENGINE: Passes variables to CSS
         if (foilSelect && foilSelect.value !== 'none') {
-            const dxyMax = Math.hypot(centerX, centerY);
-            let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
-            
-            foilLayer.style.setProperty('--o', opacityCalc);
-            foilLayer.style.setProperty('--x', `${x * 0.5}px`);
-            foilLayer.style.setProperty('--y', `${y * 0.5}px`);
-        } else {
-            foilLayer.style.setProperty('--o', '0');
+            foilLayer.style.setProperty('--o', '0'); 
+            foilLayer.style.setProperty('--x', '0px');
+            foilLayer.style.setProperty('--y', '0px');
         }
     });
-
-    tiltContainer.addEventListener('mouseleave', () => {
-        tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-        foilLayer.style.setProperty('--o', '0');
-    });
-}
 
     tiltContainer.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
@@ -516,25 +522,27 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         const centerX = rect.width / 2;
         const centerY = rect.height / 2;
         
+        // Exact distances from center
         const x = e.clientX - rect.left - centerX;
         const y = e.clientY - rect.top - centerY;
 
+        // Dynamic 3D tilt
         const rotateX = (y / centerY) * -15; 
         const rotateY = (x / centerX) * 15; 
         tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
 
+        // FOIL PARALLAX INJECTION
         if (foilSelect && foilSelect.value !== 'none') {
             foilLayer.className = `foil-layer foil-${foilSelect.value}`;
             
+            // Calculate light dropoff based on distance from center
             const dxyMax = Math.hypot(centerX, centerY);
-            let opacityCalc = 1.825 - (Math.hypot(x, y) / dxyMax);
-            if (opacityCalc > 1) opacityCalc = 1;
-            if (opacityCalc < 0) opacityCalc = 0;
+            let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
             
-            // WE FEED THE VARIABLES ONLY - No backgroundPosition Overrides
+            // Update CSS Variables (CSS handles the complex background blends)
             foilLayer.style.setProperty('--o', opacityCalc);
-            foilLayer.style.setProperty('--x', `${x * 1.25}px`);
-            foilLayer.style.setProperty('--y', `${y * 1.25}px`);
+            foilLayer.style.setProperty('--x', `${x * 0.5}px`);
+            foilLayer.style.setProperty('--y', `${y * 0.5}px`);
         } else {
             foilLayer.style.setProperty('--o', '0');
         }
@@ -548,7 +556,7 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
              if (foilSelect && foilSelect.value !== 'none') {
-                 foilLayer.style.setProperty('--o', '0.1');
+                 foilLayer.style.setProperty('--o', '0');
                  foilLayer.style.setProperty('--x', '0px');
                  foilLayer.style.setProperty('--y', '0px');
              }
@@ -556,4 +564,5 @@ if (tiltContainer && tiltWrapper && foilLayer) {
     });
 }
 
+// Boot up
 init();
