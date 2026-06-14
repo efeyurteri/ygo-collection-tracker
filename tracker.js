@@ -6,7 +6,6 @@ let ygoDatabase = [];
 let ygoSets = [];
 let processedCollection = []; 
 
-// DOM Elements
 const grid = document.getElementById('cardGrid');
 const form = document.getElementById('addCardForm');
 const searchInput = document.getElementById('searchInput');
@@ -21,7 +20,6 @@ const totalValueDisplay = document.getElementById('totalValue');
 const cardCountDisplay = document.getElementById('cardCount');
 const addStatus = document.getElementById('addStatus');
 
-// Modal Elements
 const modal = document.getElementById("cardModal");
 const closeBtn = document.querySelector(".close-btn");
 const modalImage = document.getElementById("modalImage");
@@ -241,7 +239,6 @@ function applyCardMask(dbCard) {
     const tiltWrapper = document.getElementById("tiltWrapper");
     if (!foilLayer || !tiltWrapper) return;
     
-    // Maske matematiği için tam oran kilitlenir
     tiltWrapper.style.aspectRatio = "354 / 516";
     
     let maskImages = [];
@@ -249,28 +246,26 @@ function applyCardMask(dbCard) {
     let maskPositions = [];
 
     // 1. Resim Kutusu
-    maskImages.push('linear-gradient(#000, #000)');
+    maskImages.push('linear-gradient(rgba(0,0,0,1), rgba(0,0,0,1))');
     maskSizes.push('76.27% 52.32%'); 
     maskPositions.push('50% 37.8%');
 
     // 2. Özellik (Attribute) Sembolü
     if (dbCard && (dbCard.attribute || dbCard.type.includes("Spell") || dbCard.type.includes("Trap"))) {
-        maskImages.push('radial-gradient(ellipse, #000 68%, transparent 70%)');
+        maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
         maskSizes.push('9.03% 6.2%');
         maskPositions.push('91.92% 4.95%');
     }
 
-    // 3. Yıldızlar (Boşluk hesaplaması 23.2px'e daraltıldı)
+    // 3. Yıldızlar (23.2 piksel hesaplaması)
     if (dbCard && dbCard.level !== undefined && !dbCard.type.includes("Link")) {
         let numStars = dbCard.level;
         let isXyz = dbCard.type.includes("XYZ");
         
         for (let i = 0; i < numStars; i++) {
-            maskImages.push('radial-gradient(ellipse, #000 68%, transparent 70%)');
+            maskImages.push('radial-gradient(ellipse, rgba(0,0,0,1) 68%, transparent 70%)');
             maskSizes.push('6.21% 4.26%');
             
-            // Xyz (siyah) yıldızlar soldan başlar, diğerleri sağdan. 
-            // 23.2 boşluk oranı boşlukların tam oturmasını sağlar.
             let offsetX = isXyz ? (43 + (i * 23.2)) : (296 - (i * 23.2));
             let xPercent = (offsetX / 354) * 100;
             
@@ -304,17 +299,16 @@ function openModal(item, dbCard) {
             modalImage.onerror = () => { modalImage.src = 'https://images.ygoprodeck.com/images/cards/back_high.jpg'; };
         }
         
-        // Dinamik maskeyi bas
         applyCardMask(dbCard);
         
         const foilLayer = document.getElementById("foilLayer");
         if (foilLayer && foilSelect) {
             if (foilSelect.value !== 'none') {
                 foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-                foilLayer.style.setProperty('--o', '0.4'); 
+                foilLayer.style.opacity = '0.4'; 
             } else {
                 foilLayer.className = `foil-layer`;
-                foilLayer.style.setProperty('--o', '0');
+                foilLayer.style.opacity = '0';
             }
         }
         
@@ -497,17 +491,17 @@ if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-// Folyoyu seçildiği an aktifleştiren kod
+// Folyoyu anında aktifleştiren kod
 if (foilSelect) {
     foilSelect.addEventListener('change', () => {
         const foilLayer = document.getElementById("foilLayer");
         if (modal && modal.style.display === "block" && foilLayer) {
             if (foilSelect.value !== 'none') {
                 foilLayer.className = `foil-layer foil-${foilSelect.value}`;
-                foilLayer.style.setProperty('--o', '0.4'); 
+                foilLayer.style.opacity = '0.4'; 
             } else {
                 foilLayer.className = `foil-layer`;
-                foilLayer.style.setProperty('--o', '0');
+                foilLayer.style.opacity = '0';
             }
         }
     });
@@ -515,7 +509,7 @@ if (foilSelect) {
 
 
 // --------------------------------------------------------
-// THE FOIL & TILT ENGINE
+// THE FOIL & TILT ENGINE (CSS Syntax Hatalarını Kapatan Kısım)
 // --------------------------------------------------------
 const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
@@ -537,9 +531,12 @@ if (tiltContainer && tiltWrapper && foilLayer) {
         tiltWrapper.style.transition = `transform 0.5s ease-out`;
         
         if (foilSelect && foilSelect.value !== 'none') {
-            foilLayer.style.setProperty('--o', '0.4'); 
-            foilLayer.style.setProperty('--x', '0px');
-            foilLayer.style.setProperty('--y', '0px');
+            foilLayer.style.opacity = '0.4'; 
+            if (foilSelect.value === 'ultra') {
+                foilLayer.style.backgroundPosition = `50% 50%`;
+            } else if (foilSelect.value === 'secret') {
+                foilLayer.style.backgroundPosition = `50% 50%, 0px 0px, 0px 0px`;
+            }
         }
     });
 
@@ -564,12 +561,20 @@ if (tiltContainer && tiltWrapper && foilLayer) {
             
             const dxyMax = Math.hypot(centerX, centerY);
             let opacityCalc = Math.min(1, Math.max(0, 1.825 - (Math.hypot(x, y) / dxyMax)));
+            foilLayer.style.opacity = opacityCalc;
             
-            foilLayer.style.setProperty('--o', opacityCalc);
-            foilLayer.style.setProperty('--x', `${x * 1.25}px`);
-            foilLayer.style.setProperty('--y', `${y * 1.25}px`);
+            // Linter'ı rahatlatmak için matematik hesaplamaları tamamen JS'te yapılır
+            const bgX = 50 + (x * -0.5); 
+            const bgY = 50 + (y * -0.5); 
+
+            if (foilSelect.value === 'ultra') {
+                foilLayer.style.backgroundPosition = `${bgX}% ${bgY}%`;
+            } else if (foilSelect.value === 'secret') {
+                // Sadece gökkuşağı hareket eder, noktalar ve SVG çizgileri 0px 0px'de sabit kalır
+                foilLayer.style.backgroundPosition = `${bgX}% ${bgY}%, 0px 0px, 0px 0px`;
+            }
         } else {
-            foilLayer.style.setProperty('--o', '0');
+            foilLayer.style.opacity = '0';
         }
     });
 
@@ -581,9 +586,12 @@ if (tiltContainer && tiltWrapper && foilLayer) {
              tiltWrapper.style.transition = `transform 0.5s ease-out`;
              
              if (foilSelect && foilSelect.value !== 'none') {
-                 foilLayer.style.setProperty('--o', '0.4');
-                 foilLayer.style.setProperty('--x', '0px');
-                 foilLayer.style.setProperty('--y', '0px');
+                 foilLayer.style.opacity = '0.4';
+                 if (foilSelect.value === 'ultra') {
+                     foilLayer.style.backgroundPosition = `50% 50%`;
+                 } else if (foilSelect.value === 'secret') {
+                     foilLayer.style.backgroundPosition = `50% 50%, 0px 0px, 0px 0px`;
+                 }
              }
          }
     });
