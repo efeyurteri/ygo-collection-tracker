@@ -304,6 +304,7 @@ hr { border: 0; height: 1px; background: #444; margin: 15px 0; }
 /* --- THE AUTHENTIC FOIL STYLES --- */
 
 /* --- THE AUTHENTIC MASKED FOIL STYLES (Adapted from ygo-ocg-secret-rare) --- */
+/* --- THE AUTHENTIC MASKED FOIL STYLES --- */
 
 .foil-layer {
     position: absolute;
@@ -318,50 +319,38 @@ hr { border: 0; height: 1px; background: #444; margin: 15px 0; }
     --y: 0px;
     --o: 0;
     opacity: var(--o);
+    mix-blend-mode: color-dodge;
 }
 
 /* Ultra Rare: Smooth moving rainbow sweep */
 .foil-ultra {
-    mix-blend-mode: color-dodge;
-    background: repeating-linear-gradient(
+    background-image: repeating-linear-gradient(
         115deg,
         transparent 0%,
         rgba(255, 0, 0, 0.4) 10%, rgba(255, 255, 0, 0.4) 20%,
         rgba(0, 255, 0, 0.4) 30%, rgba(0, 255, 255, 0.4) 40%,
         rgba(0, 0, 255, 0.4) 50%, rgba(255, 0, 255, 0.4) 60%,
         transparent 70%
-    ) calc(var(--x) * -2) calc(var(--y) * -2) / 300% 300%;
+    );
+    background-size: 300% 300%;
+    /* Moves the single layer based on mouse variables */
+    background-position: calc(50% + var(--x) * -2) calc(50% + var(--y) * -2);
 }
 
-/* Secret Rare: Authentic scanlines + dot matrix + moving orthogonal grid */
+/* Secret Rare: Authentic scanlines + moving heavy rainbow */
 .foil-secret {
-    mix-blend-mode: color-dodge;
-
-    /* The moving grid */
-    --grid-x1: calc(var(--x) * -0.2);
-    --grid-x2: calc(var(--x) * -0.4);
-    --grid-y1: calc(var(--y) * -0.2);
-    
-    --grid:
-        linear-gradient(transparent 40%, #fff 49%, #fff 51%, transparent 60%) 0 var(--grid-y1) / 100% 7.5em,
-        linear-gradient(90deg, transparent 50%, #fff 59%, #fff 61%, transparent 70%) var(--grid-x1) 0 / 7.6em 100%,
-        linear-gradient(90deg, transparent 55%, #fff, transparent 65%) var(--grid-x2) 0 / 7.5em 100%;
-
-    /* The "Dotted" Texture: Horizontal scanlines + dot matrix */
-    --texture:
-        linear-gradient(transparent, rgba(0, 0, 0, 0.75), transparent) 0 0 / 100% 3px,
-        radial-gradient(transparent, rgba(0, 0, 0, 0.5)) 0 0 / 2px 2px;
-
-    /* The heavy underlying rainbow */
-    --rainbow: repeating-linear-gradient(
-        30deg,
-        rgb(255, 120, 0), rgb(255, 120, 0), rgb(255, 255, 0),
-        rgb(0, 255, 0), rgb(0, 255, 255), rgb(0, 120, 255),
-        rgb(0, 255, 255), rgb(0, 255, 0), rgb(255, 255, 0),
-        rgb(255, 120, 0) 30em
-    ) calc(var(--x) * -2) calc(var(--y) * -2) / 300% 300% no-repeat;
-
-    /* Blending them all together creates the physical etching illusion */
-    background: var(--rainbow), var(--texture), var(--grid), #1a1a1a;
-    background-blend-mode: color, normal, normal, normal;
+    background-image: 
+        /* Layer 1: Dashes (SVG embedded) */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Cline x1='-4' y1='20' x2='20' y2='-4' stroke='white' stroke-width='1.5' stroke-dasharray='2 4' /%3E%3C/svg%3E"),
+        /* Layer 2: Rainbow Glare */
+        linear-gradient(
+            115deg,
+            transparent 10%, rgba(255, 0, 0, 0.7) 20%, rgba(255, 255, 0, 0.7) 30%,
+            rgba(0, 255, 0, 0.7) 40%, rgba(0, 255, 255, 0.7) 50%, rgba(0, 0, 255, 0.7) 60%,
+            rgba(255, 0, 255, 0.7) 70%, transparent 80%
+        );
+    background-size: 16px 16px, 300% 300%;
+    background-repeat: repeat, no-repeat;
+    /* Layer 1 is locked to 0px 0px. Layer 2 sweeps behind it. */
+    background-position: 0px 0px, calc(50% + var(--x) * -2) calc(50% + var(--y) * -2);
 }
