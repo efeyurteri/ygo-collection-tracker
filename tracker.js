@@ -4,7 +4,7 @@ let baseCollection = [];
 let localAdditions = JSON.parse(localStorage.getItem('ygo_local_additions')) || [];
 let ygoDatabase = [];
 let ygoSets = [];
-let processedCollection = []; // NEW: Pre-calculated array for instant search
+let processedCollection = []; 
 
 // DOM Elements
 const grid = document.getElementById('cardGrid');
@@ -14,6 +14,7 @@ const typeFilter = document.getElementById('typeFilter');
 const attributeFilter = document.getElementById('attributeFilter');
 const levelFilter = document.getElementById('levelFilter');
 const sortFilter = document.getElementById('sortFilter');
+const foilSelect = document.getElementById('foilSelect');
 const exportBtn = document.getElementById('exportBtn');
 const clearLocalBtn = document.getElementById('clearLocalBtn');
 const totalValueDisplay = document.getElementById('totalValue');
@@ -29,7 +30,7 @@ const modalPrice = document.getElementById("modalPrice");
 const banTcg = document.getElementById("banTcg");
 const banOcg = document.getElementById("banOcg");
 const banMd = document.getElementById("banMd");
-const modalTyping = document.getElementById("modalTyping"); // Replaced multiple spans with one clean string
+const modalTyping = document.getElementById("modalTyping"); 
 const modalLevel = document.getElementById("modalLevel");
 const modalDesc = document.getElementById("modalDesc");
 const atkContainer = document.getElementById("atkContainer");
@@ -80,7 +81,7 @@ async function fetchDatabase() {
         ygoDatabase = cardsData.data;
         ygoSets = setsData;
         
-        buildProcessedCollection(); // THE FIX: Pre-calculate everything ONCE
+        buildProcessedCollection(); 
         renderCards();
     } catch (err) {
         console.error("Failed to fetch YGO databases:", err);
@@ -91,11 +92,10 @@ function getCollection() {
     return [...localAdditions, ...baseCollection];
 }
 
-// THE LAG FIX: O(1) Dictionary Lookup and Pre-Processing
+// THE PRE-PROCESSOR: Extracts Date and Level for instant sorting
 function buildProcessedCollection() {
     const fullCollection = getCollection();
     
-    // Create a dictionary of the DB to avoid doing .find() 13,000 times per card
     const dbMap = new Map();
     ygoDatabase.forEach(c => {
         dbMap.set(decodeHTML(c.name).toLowerCase(), c);
@@ -104,13 +104,30 @@ function buildProcessedCollection() {
     processedCollection = fullCollection.map(item => {
         const decodedName = decodeHTML(item['Card Name']);
         const searchName = decodedName.toLowerCase();
-        
-        // Instant map lookup
         const dbCard = dbMap.get(searchName);
         
         let price = 0;
         if (dbCard && dbCard.card_prices && dbCard.card_prices[0]) {
             price = parseFloat(dbCard.card_prices[0].tcgplayer_price) || 0;
+        }
+
+        // Cache Level for Sort
+        let cardLevel = 0;
+        if (dbCard) { cardLevel = dbCard.level || dbCard.linkval || 0; }
+
+        // Cache Date for Sort
+        let earliestDate = "9999-99-99"; // Fallback puts unknowns at bottom
+        if (dbCard && dbCard.card_sets && ygoSets.length > 0) {
+            dbCard.card_sets.forEach(cs => {
+                const prefix = cs.set_code.split('-')[0];
+                const setInfo = ygoSets.find(s => s.set_code === prefix);
+                if (setInfo && setInfo.tcg_date && setInfo.tcg_date < earliestDate) {
+                    earliestDate = setInfo.tcg_date;
+                }
+            });
+        }
+        if (earliestDate === "9999-99-99" && dbCard && dbCard.misc_info && dbCard.misc_info[0]) {
+            earliestDate = dbCard.misc_info[0].tcg_date || "9999-99-99";
         }
         
         return { 
@@ -118,12 +135,13 @@ function buildProcessedCollection() {
             dbCard, 
             price, 
             qty: parseInt(item.Quantity) || 1,
-            searchString: (searchName + " " + (item['Set Code'] || "").toLowerCase()) // Pre-build search string
+            searchString: (searchName + " " + (item['Set Code'] || "").toLowerCase()),
+            cardLevel: cardLevel,
+            earliestDate: earliestDate
         };
     });
 }
 
-// Instantaneous Rendering
 function renderCards() {
     if (!grid) return;
     grid.innerHTML = '';
@@ -134,36 +152,28 @@ function renderCards() {
     const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
     const typeVal = typeFilter ? typeFilter.value : 'All';
     const attrVal = attributeFilter ? attributeFilter.value : 'All';
-    const lvlVal = levelFilter ? levelFilter.value : 'All';
     const sortVal = sortFilter ? sortFilter.value : 'name_asc';
 
-    // Filters are now working on pre-calculated data (lightning fast)
     let displayData = processedCollection.filter(data => {
         const matchesSearch = data.searchString.includes(searchTerm);
 
         let matchesType = true;
         let matchesAttr = true;
-        let matchesLvl = true;
 
         if (data.dbCard) {
             if (typeVal !== 'All') matchesType = data.dbCard.type.includes(typeVal);
             if (attrVal !== 'All') matchesAttr = (data.dbCard.attribute === attrVal);
-            if (lvlVal !== 'All') {
-                const cardLvl = data.dbCard.level || data.dbCard.linkval || -1;
-                matchesLvl = (cardLvl.toString() === lvlVal);
-            }
         } else {
-            if (typeVal !== 'All' || attrVal !== 'All' || lvlVal !== 'All') return false; 
+            if (typeVal !== 'All' || attrVal !== 'All') return false; 
         }
 
-        return matchesSearch && matchesType && matchesAttr && matchesLvl;
+        return matchesSearch && matchesType && matchesAttr;
     });
 
     displayData.sort((a, b) => {
         if (sortVal === 'name_asc') return a.item['Card Name'].localeCompare(b.item['Card Name']);
         if (sortVal === 'name_desc') return b.item['Card Name'].localeCompare(a.item['Card Name']);
         if (sortVal === 'price_desc') return b.price - a.price;
-        
         if (sortVal === 'atk_desc') {
             const atkA = (a.dbCard && a.dbCard.atk !== undefined) ? a.dbCard.atk : -1;
             const atkB = (b.dbCard && b.dbCard.atk !== undefined) ? b.dbCard.atk : -1;
@@ -174,6 +184,11 @@ function renderCards() {
             const defB = (b.dbCard && b.dbCard.def !== undefined) ? b.dbCard.def : -1;
             return defB - defA;
         }
+        // NEW: Level & Date Sorts
+        if (sortVal === 'level_desc') return b.cardLevel - a.cardLevel;
+        if (sortVal === 'level_asc') return a.cardLevel - b.cardLevel;
+        if (sortVal === 'date_desc') return b.earliestDate.localeCompare(a.earliestDate);
+        if (sortVal === 'date_asc') return a.earliestDate.localeCompare(b.earliestDate);
         return 0;
     });
 
@@ -233,19 +248,18 @@ function openModal(item, dbCard) {
         
         if (modalName) modalName.textContent = decodeHTML(item['Card Name']);
         
-        // THE FIX: Clean [ DARK / Dragon / Effect ] String Builder
         if (modalTyping) {
             let typingStr = "Custom / Unreleased";
             if (dbCard) {
                 const isSpellTrap = dbCard.type.includes("Spell") || dbCard.type.includes("Trap");
                 if (isSpellTrap) {
                     const mainType = dbCard.type.toUpperCase().replace(" CARD", "");
-                    typingStr = `${mainType} / ${dbCard.race}`; // Produces: SPELL / Normal
+                    typingStr = `${mainType} / ${dbCard.race}`; 
                 } else {
                     const attr = dbCard.attribute ? dbCard.attribute : "UNKNOWN";
                     const race = dbCard.race || "Unknown";
                     const type = dbCard.type ? dbCard.type.replace(" Monster", "") : "Effect";
-                    typingStr = `${attr} / ${race} / ${type}`; // Produces: DARK / Dragon / Effect
+                    typingStr = `${attr} / ${race} / ${type}`; 
                 }
             }
             modalTyping.textContent = typingStr;
@@ -391,12 +405,11 @@ if (form) {
         form.reset();
         addStatus.textContent = "Card added successfully!";
         addStatus.style.color = "#4caf50";
-        buildProcessedCollection(); // Refresh dictionary on add
+        buildProcessedCollection(); 
         renderCards();
     });
 }
 
-// DEBOUNCE: Delays rendering by 150ms while typing so the browser doesn't freeze
 let searchTimeout;
 if (searchInput) {
     searchInput.addEventListener('input', () => {
@@ -407,75 +420,77 @@ if (searchInput) {
 
 if (typeFilter) typeFilter.addEventListener('change', renderCards);
 if (attributeFilter) attributeFilter.addEventListener('change', renderCards);
-if (levelFilter) levelFilter.addEventListener('change', renderCards);
 if (sortFilter) sortFilter.addEventListener('change', renderCards);
 
-if (exportBtn) {
-    exportBtn.addEventListener('click', () => {
-        const csv = Papa.unparse(getCollection());
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'YuGiOh_Collection_Tracker.csv';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    });
-}
 
-if (clearLocalBtn) {
-    clearLocalBtn.addEventListener('click', () => {
-        if(confirm('Did you upload your exported CSV to GitHub yet?')) {
-            localAdditions = [];
-            localStorage.removeItem('ygo_local_additions');
-            buildProcessedCollection();
-            renderCards();
-        }
-    });
-}
-
-// 3D TILT EFFECT LOGIC
-const tiltImage = document.getElementById("modalImage");
+// --- THE FOIL AND TILT SYSTEM ---
+const tiltWrapper = document.getElementById("tiltWrapper");
 const tiltContainer = document.querySelector(".modal-image-container");
+const foilLayer = document.getElementById("foilLayer");
 
-if (tiltContainer && tiltImage) {
+if (tiltContainer && tiltWrapper && foilLayer) {
     let isDragging = false;
 
     tiltContainer.addEventListener('mousedown', (e) => {
         isDragging = true;
         e.preventDefault(); 
+        tiltWrapper.style.cursor = "grabbing";
     });
 
     window.addEventListener('mouseup', () => {
         isDragging = false;
-        tiltImage.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-        tiltImage.style.transition = `transform 0.5s ease-out`;
+        tiltWrapper.style.cursor = "grab";
+        tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+        tiltWrapper.style.transition = `transform 0.5s ease-out`;
+        
+        // Softly fade foil back to resting state
+        if (foilSelect && foilSelect.value !== 'none') {
+            foilLayer.style.opacity = '0.3';
+            foilLayer.style.backgroundPosition = `50% 50%`; 
+        }
     });
 
     tiltContainer.addEventListener('mousemove', (e) => {
         if (!isDragging) return;
 
-        tiltImage.style.transition = 'none';
+        tiltWrapper.style.transition = 'none';
 
         const rect = tiltContainer.getBoundingClientRect();
-        
         const x = (e.clientX - rect.left) / rect.width - 0.5;
         const y = (e.clientY - rect.top) / rect.height - 0.5;
 
         const rotateY = x * 75; 
         const rotateX = -(y * 75); 
 
-        tiltImage.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`;
+        tiltWrapper.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.15)`;
+
+        // FOIL CALCULATION
+        if (foilSelect && foilSelect.value !== 'none') {
+            foilLayer.className = `foil-layer foil-${foilSelect.value}`;
+            foilLayer.style.opacity = '1';
+            
+            // Move the gradient opposite to the tilt
+            const bgX = (x + 0.5) * 100;
+            const bgY = (y + 0.5) * 100;
+            foilLayer.style.backgroundPosition = `${bgX}% ${bgY}%`;
+        } else {
+            foilLayer.style.opacity = '0';
+        }
     });
 
     tiltContainer.addEventListener('mouseleave', () => {
          if(isDragging) {
              isDragging = false;
-             tiltImage.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
-             tiltImage.style.transition = `transform 0.5s ease-out`;
+             tiltWrapper.style.cursor = "grab";
+             tiltWrapper.style.transform = `rotateX(0deg) rotateY(0deg) scale(1)`;
+             tiltWrapper.style.transition = `transform 0.5s ease-out`;
+             
+             if (foilSelect && foilSelect.value !== 'none') {
+                 foilLayer.style.opacity = '0.3';
+                 foilLayer.style.backgroundPosition = `50% 50%`;
+             }
          }
     });
 }
 
-// Boot up
 init();
